@@ -36,7 +36,14 @@ const DATE_RANGES: { id: DateRange; label: string; days: number | null }[] = [
 
 export default function Statistics({ fasts }: StatisticsProps) {
   const { theme } = useTheme();
-  const accentTextColor = theme.accent === "default" ? "#0B0B0C" : "#FFFFFF";
+  const accentTextColor =
+    theme.mode === "light"
+      ? theme.accent === "default"
+        ? "#FFFFFF"
+        : "#FFFFFF"
+      : theme.accent === "default"
+      ? "#0B0B0C"
+      : "#FFFFFF";
   const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
   const [newWeight, setNewWeight] = useState("");
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");

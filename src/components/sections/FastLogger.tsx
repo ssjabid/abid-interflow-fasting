@@ -18,7 +18,17 @@ export default function FastLogger({
   userId,
 }: FastLoggerProps) {
   const { theme } = useTheme();
-  const accentTextColor = theme.accent === "default" ? "#0B0B0C" : "#FFFFFF";
+  // In dark mode with default accent (white): text should be dark
+  // In light mode with default accent (dark): text should be white
+  // For colored accents: text should always be white
+  const accentTextColor =
+    theme.mode === "light"
+      ? theme.accent === "default"
+        ? "#FFFFFF"
+        : "#FFFFFF"
+      : theme.accent === "default"
+      ? "#0B0B0C"
+      : "#FFFFFF";
 
   const [notes, setNotes] = useState("");
   const [selectedProtocol, setSelectedProtocol] = useState("16:8");
@@ -80,6 +90,17 @@ export default function FastLogger({
 
   // Delete custom protocol
   const deleteCustomProtocol = (protocolId: string) => {
+    const protocol = customProtocols.find((p) => p.id === protocolId);
+    const protocolName = protocol?.name || "this custom fast";
+
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${protocolName}"? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
     const updated = customProtocols.filter((p) => p.id !== protocolId);
     setCustomProtocols(updated);
 

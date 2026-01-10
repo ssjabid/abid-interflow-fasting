@@ -23,7 +23,14 @@ const CATEGORIES: { id: LeaderboardCategory; label: string; suffix: string }[] =
 
 export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
   const { theme } = useTheme();
-  const accentTextColor = theme.accent === "default" ? "#0B0B0C" : "#FFFFFF";
+  const accentTextColor =
+    theme.mode === "light"
+      ? theme.accent === "default"
+        ? "#FFFFFF"
+        : "#FFFFFF"
+      : theme.accent === "default"
+      ? "#0B0B0C"
+      : "#FFFFFF";
   const [activeCategory, setActiveCategory] =
     useState<LeaderboardCategory>("totalHours");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);

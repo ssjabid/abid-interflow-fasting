@@ -14,7 +14,14 @@ export default function ScheduleReminder({
   isActiveFast,
 }: ScheduleReminderProps) {
   const { theme } = useTheme();
-  const accentTextColor = theme.accent === "default" ? "#0B0B0C" : "#FFFFFF";
+  const accentTextColor =
+    theme.mode === "light"
+      ? theme.accent === "default"
+        ? "#FFFFFF"
+        : "#FFFFFF"
+      : theme.accent === "default"
+      ? "#0B0B0C"
+      : "#FFFFFF";
   const [currentTime, setCurrentTime] = useState(new Date());
   const [dismissed, setDismissed] = useState(false);
 

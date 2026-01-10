@@ -290,6 +290,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
     if (!currentUser) return;
 
     try {
+      // Delete all fasts from Firebase
       const q = query(
         collection(db, "fasts"),
         where("userId", "==", currentUser.uid)
@@ -302,17 +303,23 @@ export function FastProvider({ children }: { children: ReactNode }) {
         batch.delete(docSnapshot.ref);
       });
 
-      await batch.commit();
-      console.log(`Deleted ${snapshot.docs.length} fasts`);
+      // Also delete profile from Firebase
+      const profileRef = doc(db, "profiles", currentUser.uid);
+      batch.delete(profileRef);
 
-      // Clear local profile too
+      await batch.commit();
+      console.log(`Deleted ${snapshot.docs.length} fasts and profile`);
+
+      // Clear local data
       localStorage.removeItem(`profile_${currentUser.uid}`);
+      localStorage.removeItem(`weightEntries_${currentUser.uid}`);
+      localStorage.removeItem(`achievements_${currentUser.uid}`);
 
       // Reset state
       setFasts([]);
       setActiveFast(null);
 
-      alert("All data cleared successfully!");
+      alert("All data cleared successfully! Please refresh the page.");
     } catch (error) {
       console.error("Error clearing data:", error);
       alert("Failed to clear data. Please try again.");

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PROTOCOLS } from "../types";
 import type { UserProfile } from "../types";
+import { saveProfile } from "../services/profile";
 
 interface OnboardingProps {
   userId: string;
@@ -68,7 +69,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const finalProfile: UserProfile = {
       ...profile,
       onboardingComplete: true,
@@ -80,7 +81,9 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
           }
         : undefined,
     };
-    localStorage.setItem(`profile_${userId}`, JSON.stringify(finalProfile));
+
+    // Save to both localStorage and Firebase
+    await saveProfile(userId, finalProfile);
     onComplete();
   };
 
@@ -992,12 +995,14 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                       placeholder="Enter weight"
                       style={{
                         flex: 1,
+                        minWidth: 0,
                         backgroundColor: "#0B0B0C",
                         border: "1px solid #1F1F24",
                         padding: "16px",
                         color: "#F5F5F5",
                         fontSize: "18px",
                         fontWeight: 600,
+                        boxSizing: "border-box",
                       }}
                     />
                     <select
@@ -1016,6 +1021,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                         fontSize: "16px",
                         fontWeight: 500,
                         cursor: "pointer",
+                        flexShrink: 0,
                       }}
                     >
                       <option value="kg">kg</option>

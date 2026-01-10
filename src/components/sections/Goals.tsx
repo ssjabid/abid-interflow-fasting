@@ -14,7 +14,14 @@ interface GoalsProps {
 
 export default function Goals({ userId }: GoalsProps) {
   const { theme } = useTheme();
-  const accentTextColor = theme.accent === "default" ? "#0B0B0C" : "#FFFFFF";
+  const accentTextColor =
+    theme.mode === "light"
+      ? theme.accent === "default"
+        ? "#FFFFFF"
+        : "#FFFFFF"
+      : theme.accent === "default"
+      ? "#0B0B0C"
+      : "#FFFFFF";
   const [profile, setProfile] = useState<UserProfile>({
     dailyGoal: 16,
     weeklyGoal: 112,

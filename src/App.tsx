@@ -17,6 +17,7 @@ import LandingPage from "./components/LandingPage";
 import Onboarding from "./components/Onboarding";
 import AchievementUnlock from "./components/ui/AchievementUnlock";
 import InstallPrompt from "./components/ui/InstallPrompt";
+import { loadProfile } from "./services/profile";
 
 type View =
   | "dashboard"
@@ -129,19 +130,19 @@ function App() {
   }, [currentUser]);
   const lastFastCountRef = useRef(0);
 
-  // Check if user needs onboarding
+  // Check if user needs onboarding (from Firebase)
   useEffect(() => {
-    if (currentUser) {
-      const profile = localStorage.getItem(`profile_${currentUser.uid}`);
-      if (!profile) {
-        setShowOnboarding(true);
-      } else {
-        const parsed = JSON.parse(profile);
-        if (!parsed.onboardingComplete) {
+    const checkOnboarding = async () => {
+      if (currentUser) {
+        const profile = await loadProfile(currentUser.uid);
+        if (!profile || !profile.onboardingComplete) {
           setShowOnboarding(true);
+        } else {
+          setShowOnboarding(false);
         }
       }
-    }
+    };
+    checkOnboarding();
   }, [currentUser]);
 
   // Check for achievements when fasts change
