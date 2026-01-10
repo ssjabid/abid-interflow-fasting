@@ -42,6 +42,10 @@ export default function FastLogger({
   const [customProtocols, setCustomProtocols] = useState<Protocol[]>([]);
   const [newCustomName, setNewCustomName] = useState("");
   const [newCustomHours, setNewCustomHours] = useState(16);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [protocolToDelete, setProtocolToDelete] = useState<Protocol | null>(
+    null
+  );
 
   // Load custom protocols and preferences
   useEffect(() => {
@@ -89,19 +93,18 @@ export default function FastLogger({
   };
 
   // Delete custom protocol
-  const deleteCustomProtocol = (protocolId: string) => {
+  const handleDeleteClick = (protocolId: string) => {
     const protocol = customProtocols.find((p) => p.id === protocolId);
-    const protocolName = protocol?.name || "this custom fast";
-
-    if (
-      !window.confirm(
-        `Are you sure you want to delete "${protocolName}"? This cannot be undone.`
-      )
-    ) {
-      return;
+    if (protocol) {
+      setProtocolToDelete(protocol);
+      setShowDeleteConfirm(true);
     }
+  };
 
-    const updated = customProtocols.filter((p) => p.id !== protocolId);
+  const confirmDeleteProtocol = () => {
+    if (!protocolToDelete) return;
+
+    const updated = customProtocols.filter((p) => p.id !== protocolToDelete.id);
     setCustomProtocols(updated);
 
     const stored = localStorage.getItem(`profile_${userId}`);
@@ -109,9 +112,17 @@ export default function FastLogger({
     profile.customProtocols = updated;
     localStorage.setItem(`profile_${userId}`, JSON.stringify(profile));
 
-    if (selectedProtocol === protocolId) {
+    if (selectedProtocol === protocolToDelete.id) {
       setSelectedProtocol("16:8");
     }
+
+    setShowDeleteConfirm(false);
+    setProtocolToDelete(null);
+  };
+
+  const cancelDeleteProtocol = () => {
+    setShowDeleteConfirm(false);
+    setProtocolToDelete(null);
   };
 
   // All available protocols (built-in + custom)
@@ -676,7 +687,7 @@ export default function FastLogger({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteCustomProtocol(protocol.id);
+                        handleDeleteClick(protocol.id);
                       }}
                       style={{
                         position: "absolute",
@@ -1403,6 +1414,126 @@ export default function FastLogger({
                 }}
               >
                 Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && protocolToDelete && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "24px",
+          }}
+          onClick={cancelDeleteProtocol}
+        >
+          <div
+            style={{
+              backgroundColor: theme.colors.bgCard,
+              border: `1px solid ${theme.colors.border}`,
+              padding: "32px",
+              maxWidth: "400px",
+              width: "100%",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Warning Icon */}
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                backgroundColor: "#F43F5E20",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 20px",
+              }}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#F43F5E"
+                strokeWidth="2"
+              >
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+              </svg>
+            </div>
+
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: 600,
+                color: theme.colors.text,
+                textAlign: "center",
+                marginBottom: "8px",
+              }}
+            >
+              Delete Custom Fast?
+            </h3>
+
+            <p
+              style={{
+                fontSize: "14px",
+                color: theme.colors.textMuted,
+                textAlign: "center",
+                marginBottom: "24px",
+                lineHeight: 1.5,
+              }}
+            >
+              Are you sure you want to delete "
+              <span style={{ color: theme.colors.text, fontWeight: 500 }}>
+                {protocolToDelete.name}
+              </span>
+              "? This action cannot be undone.
+            </p>
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={cancelDeleteProtocol}
+                style={{
+                  flex: 1,
+                  padding: "14px",
+                  backgroundColor: "transparent",
+                  border: `1px solid ${theme.colors.border}`,
+                  color: theme.colors.text,
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteProtocol}
+                style={{
+                  flex: 1,
+                  padding: "14px",
+                  backgroundColor: "#F43F5E",
+                  border: "none",
+                  color: "#FFFFFF",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Delete
               </button>
             </div>
           </div>

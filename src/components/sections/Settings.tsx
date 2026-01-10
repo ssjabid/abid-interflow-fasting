@@ -94,8 +94,21 @@ export default function Settings({
   // Pending accent selection (before applying)
   const [pendingAccent, setPendingAccent] = useState<ThemeAccent | null>(null);
   const previewAccent = pendingAccent || theme.accent;
+  const previewMode = theme.mode;
+  // In light mode with default accent, use dark color for visibility
   const previewColor =
-    THEME_ACCENTS.find((a) => a.id === previewAccent)?.color || "#F5F5F5";
+    previewMode === "light" && previewAccent === "default"
+      ? "#111827"
+      : THEME_ACCENTS.find((a) => a.id === previewAccent)?.color || "#F5F5F5";
+  // Text color on primary buttons
+  const previewTextColor =
+    previewMode === "light"
+      ? previewAccent === "default"
+        ? "#FFFFFF"
+        : "#FFFFFF"
+      : previewAccent === "default"
+      ? "#0B0B0C"
+      : "#FFFFFF";
 
   const handleApplyAccent = () => {
     if (pendingAccent) {
@@ -611,7 +624,7 @@ export default function Settings({
                   padding: "10px 20px",
                   backgroundColor: previewColor,
                   border: "none",
-                  color: previewAccent === "default" ? "#0B0B0C" : "#FFFFFF",
+                  color: previewTextColor,
                   fontSize: "13px",
                   fontWeight: 600,
                   cursor: "default",
@@ -652,7 +665,7 @@ export default function Settings({
                   padding: "12px",
                   backgroundColor: previewColor,
                   border: "none",
-                  color: previewAccent === "default" ? "#0B0B0C" : "#FFFFFF",
+                  color: previewTextColor,
                   fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",

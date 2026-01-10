@@ -977,7 +977,13 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                   >
                     Current Weight (optional)
                   </label>
-                  <div style={{ display: "flex", gap: "12px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <input
                       type="number"
                       value={profile.currentWeight || ""}
@@ -994,8 +1000,8 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                       }
                       placeholder="Enter weight"
                       style={{
-                        flex: 1,
-                        minWidth: 0,
+                        flex: "1 1 150px",
+                        minWidth: "150px",
                         backgroundColor: "#0B0B0C",
                         border: "1px solid #1F1F24",
                         padding: "16px",
@@ -1022,6 +1028,8 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                         fontWeight: 500,
                         cursor: "pointer",
                         flexShrink: 0,
+                        minWidth: "80px",
+                        boxSizing: "border-box",
                       }}
                     >
                       <option value="kg">kg</option>
@@ -1064,6 +1072,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                       color: "#F5F5F5",
                       fontSize: "18px",
                       fontWeight: 600,
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
