@@ -49,11 +49,6 @@ function App() {
     setTimeout(() => setLoginModalVisible(true), 10);
   };
 
-  const openSignup = () => {
-    setShowSignup(true);
-    setTimeout(() => setSignupModalVisible(true), 10);
-  };
-
   const closeLogin = () => {
     setLoginModalVisible(false);
     setTimeout(() => setShowLogin(false), 300);
