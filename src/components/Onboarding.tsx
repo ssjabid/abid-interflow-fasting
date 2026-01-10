@@ -981,7 +981,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                     style={{
                       display: "flex",
                       gap: "12px",
-                      flexWrap: "wrap",
+                      width: "100%",
                     }}
                   >
                     <input
@@ -1000,8 +1000,8 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                       }
                       placeholder="Enter weight"
                       style={{
-                        flex: "1 1 150px",
-                        minWidth: "150px",
+                        flex: 1,
+                        minWidth: 0,
                         backgroundColor: "#0B0B0C",
                         border: "1px solid #1F1F24",
                         padding: "16px",
@@ -1009,6 +1009,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                         fontSize: "18px",
                         fontWeight: 600,
                         boxSizing: "border-box",
+                        width: "100%",
                       }}
                     />
                     <select
@@ -1022,14 +1023,20 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                       style={{
                         backgroundColor: "#0B0B0C",
                         border: "1px solid #1F1F24",
-                        padding: "16px 20px",
+                        padding: "16px 16px",
                         color: "#F5F5F5",
                         fontSize: "16px",
                         fontWeight: 500,
                         cursor: "pointer",
                         flexShrink: 0,
-                        minWidth: "80px",
+                        width: "75px",
                         boxSizing: "border-box",
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23F5F5F5' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 12px center",
+                        paddingRight: "36px",
                       }}
                     >
                       <option value="kg">kg</option>
