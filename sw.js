@@ -7,8 +7,8 @@ const PRECACHE_ASSETS = [
   "/",
   "/index.html",
   "/manifest.json",
-  "/icons/icon-192x192.svg",
-  "/icons/icon-512x512.svg",
+  "/icons/abid-water-fasting-interflow-192x192.svg",
+  "/icons/abid-water-fasting-interflow-512x512.svg",
 ];
 
 // Install event - cache core assets
@@ -135,8 +135,8 @@ self.addEventListener("push", (event) => {
   const data = event.data.json();
   const options = {
     body: data.body || "Time to check your fast!",
-    icon: "/icons/icon-192x192.svg",
-    badge: "/icons/icon-192x192.svg",
+    icon: "/icons/abid-water-fasting-interflow-192x192.svg",
+    badge: "/icons/abid-water-fasting-interflow-192x192.svg",
     vibrate: [100, 50, 100],
     data: {
       url: data.url || "/",
