@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import type { Fast, FastingZone, Protocol } from "../../types";
 import { PROTOCOLS, FASTING_ZONES } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
+import { useSubscription } from "../../context/SubscriptionContext";
+import { PRO_PROTOCOLS } from "../../services/subscription";
 import FastingTipDisplay from "../ui/FastingTips";
 
 interface FastLoggerProps {
@@ -18,6 +20,8 @@ export default function FastLogger({
   userId,
 }: FastLoggerProps) {
   const { theme } = useTheme();
+  const { canAccessFeature, canAccessProtocol, promptUpgrade } =
+    useSubscription();
   // In dark mode with default accent (white): text should be dark
   // In light mode with default accent (dark): text should be white
   // For colored accents: text should always be white
@@ -598,47 +602,99 @@ export default function FastLogger({
                 }}
               >
                 {/* Built-in protocols */}
-                {PROTOCOLS.filter((p) => p.id !== "custom").map((protocol) => (
-                  <button
-                    key={protocol.id}
-                    onClick={() => setSelectedProtocol(protocol.id)}
-                    onMouseEnter={(e) => {
-                      if (selectedProtocol !== protocol.id) {
-                        e.currentTarget.style.borderColor = theme.colors.accent;
-                        e.currentTarget.style.color = theme.colors.accent;
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedProtocol !== protocol.id) {
-                        e.currentTarget.style.borderColor = theme.colors.border;
-                        e.currentTarget.style.color = theme.colors.textMuted;
-                      }
-                    }}
-                    style={{
-                      padding: "12px 20px",
-                      minWidth: "80px",
-                      backgroundColor:
-                        selectedProtocol === protocol.id
-                          ? theme.colors.accent
-                          : "transparent",
-                      border: `1px solid ${
-                        selectedProtocol === protocol.id
-                          ? theme.colors.accent
-                          : theme.colors.border
-                      }`,
-                      color:
-                        selectedProtocol === protocol.id
-                          ? accentTextColor
-                          : theme.colors.textMuted,
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    {protocol.name}
-                  </button>
-                ))}
+                {PROTOCOLS.filter((p) => p.id !== "custom").map((protocol) => {
+                  const isProProtocol = PRO_PROTOCOLS.includes(protocol.id);
+                  const isLocked =
+                    isProProtocol && !canAccessProtocol(protocol.id);
+
+                  return (
+                    <button
+                      key={protocol.id}
+                      onClick={() => {
+                        if (isLocked) {
+                          promptUpgrade("allProtocols");
+                        } else {
+                          setSelectedProtocol(protocol.id);
+                        }
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedProtocol !== protocol.id) {
+                          e.currentTarget.style.borderColor =
+                            theme.colors.accent;
+                          e.currentTarget.style.color = theme.colors.accent;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedProtocol !== protocol.id) {
+                          e.currentTarget.style.borderColor =
+                            theme.colors.border;
+                          e.currentTarget.style.color = theme.colors.textMuted;
+                        }
+                      }}
+                      style={{
+                        padding: "12px 20px",
+                        minWidth: "80px",
+                        backgroundColor:
+                          selectedProtocol === protocol.id
+                            ? theme.colors.accent
+                            : "transparent",
+                        border: `1px solid ${
+                          selectedProtocol === protocol.id
+                            ? theme.colors.accent
+                            : theme.colors.border
+                        }`,
+                        color:
+                          selectedProtocol === protocol.id
+                            ? accentTextColor
+                            : theme.colors.textMuted,
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        opacity: isLocked ? 0.6 : 1,
+                        position: "relative",
+                      }}
+                    >
+                      {protocol.name}
+                      {isLocked && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            top: "-6px",
+                            right: "-6px",
+                            backgroundColor: theme.colors.bgCard,
+                            border: `1px solid ${theme.colors.border}`,
+                            borderRadius: "50%",
+                            width: "16px",
+                            height: "16px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <svg
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke={theme.colors.textMuted}
+                            strokeWidth="2"
+                          >
+                            <rect
+                              x="3"
+                              y="11"
+                              width="18"
+                              height="11"
+                              rx="2"
+                              ry="2"
+                            />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
 
                 {/* Custom protocols */}
                 {customProtocols.map((protocol) => (
@@ -715,7 +771,13 @@ export default function FastLogger({
 
                 {/* Add custom button */}
                 <button
-                  onClick={() => setShowCustomModal(true)}
+                  onClick={() => {
+                    if (canAccessFeature("customFasts")) {
+                      setShowCustomModal(true);
+                    } else {
+                      promptUpgrade("customFasts");
+                    }
+                  }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = theme.colors.accent;
                     e.currentTarget.style.color = theme.colors.accent;
@@ -737,6 +799,8 @@ export default function FastLogger({
                     display: "flex",
                     alignItems: "center",
                     gap: "6px",
+                    opacity: canAccessFeature("customFasts") ? 1 : 0.6,
+                    position: "relative",
                   }}
                   title="Create custom fast"
                 >
@@ -752,6 +816,42 @@ export default function FastLogger({
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                   Custom
+                  {!canAccessFeature("customFasts") && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "-6px",
+                        right: "-6px",
+                        backgroundColor: theme.colors.bgCard,
+                        border: `1px solid ${theme.colors.border}`,
+                        borderRadius: "50%",
+                        width: "16px",
+                        height: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={theme.colors.textMuted}
+                        strokeWidth="2"
+                      >
+                        <rect
+                          x="3"
+                          y="11"
+                          width="18"
+                          height="11"
+                          rx="2"
+                          ry="2"
+                        />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    </span>
+                  )}
                 </button>
               </div>
               <div

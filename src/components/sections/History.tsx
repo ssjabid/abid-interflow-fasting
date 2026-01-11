@@ -2,6 +2,10 @@ import { useState } from "react";
 import type { Fast } from "../../types";
 import { PROTOCOLS } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
+import {
+  useSubscription,
+  FREE_TIER_LIMITS,
+} from "../../context/SubscriptionContext";
 
 interface HistoryProps {
   fasts: Fast[];
@@ -68,14 +72,29 @@ const MoodIcon = ({ value, color }: { value: number; color: string }) => {
 
 export default function History({ fasts, onDeleteFast }: HistoryProps) {
   const { theme } = useTheme();
+  const { canAccessFeature, promptUpgrade } = useSubscription();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const completedFasts = fasts
+  // Filter to completed fasts
+  const allCompletedFasts = fasts
     .filter((fast) => fast.status === "completed")
     .sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
+
+  // Limit to 7 days for free users
+  const hasUnlimitedHistory = canAccessFeature("unlimitedHistory");
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - FREE_TIER_LIMITS.historyDays);
+
+  const completedFasts = hasUnlimitedHistory
+    ? allCompletedFasts
+    : allCompletedFasts.filter(
+        (fast) => new Date(fast.startTime) >= cutoffDate
+      );
+
+  const hiddenFastsCount = allCompletedFasts.length - completedFasts.length;
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -203,6 +222,8 @@ export default function History({ fasts, onDeleteFast }: HistoryProps) {
           </h2>
           <p style={{ fontSize: "14px", color: theme.colors.textMuted }}>
             {completedFasts.length} fasts completed
+            {!hasUnlimitedHistory &&
+              ` (last ${FREE_TIER_LIMITS.historyDays} days)`}
           </p>
         </div>
         <span
@@ -218,6 +239,66 @@ export default function History({ fasts, onDeleteFast }: HistoryProps) {
           total hours
         </span>
       </div>
+
+      {/* Hidden fasts banner for free users */}
+      {hiddenFastsCount > 0 && (
+        <div
+          style={{
+            backgroundColor: theme.colors.bgCard,
+            border: `1px solid ${theme.colors.border}`,
+            padding: "16px 20px",
+            marginBottom: "24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={theme.colors.textMuted}
+              strokeWidth="2"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <div>
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: theme.colors.text,
+                }}
+              >
+                {hiddenFastsCount} older fast{hiddenFastsCount > 1 ? "s" : ""}{" "}
+                hidden
+              </div>
+              <div style={{ fontSize: "12px", color: theme.colors.textMuted }}>
+                Upgrade to view your complete history
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => promptUpgrade("unlimitedHistory")}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: theme.colors.text,
+              border: "none",
+              color: theme.colors.bg,
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Unlock All
+          </button>
+        </div>
+      )}
 
       {/* Grouped Fasts */}
       {Object.entries(groupedFasts).map(([date, dateFasts]) => (

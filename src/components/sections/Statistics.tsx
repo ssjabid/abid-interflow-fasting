@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { Fast, WeightEntry } from "../../types";
 import { PROTOCOLS } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
+import { useSubscription } from "../../context/SubscriptionContext";
 import CalendarHeatmap from "../ui/CalendarHeatmap";
 import {
   BarChart,
@@ -36,6 +37,7 @@ const DATE_RANGES: { id: DateRange; label: string; days: number | null }[] = [
 
 export default function Statistics({ fasts }: StatisticsProps) {
   const { theme } = useTheme();
+  const { canAccessFeature, promptUpgrade } = useSubscription();
   const accentTextColor =
     theme.mode === "light"
       ? theme.accent === "default"
@@ -656,147 +658,221 @@ export default function Statistics({ fasts }: StatisticsProps) {
       </div>
 
       {/* Weight Tracking */}
-      <div
-        style={{
-          backgroundColor: theme.colors.bgCard,
-          border: `1px solid ${theme.colors.border}`,
-          padding: "24px",
-        }}
-      >
+      {canAccessFeature("weightTracking") ? (
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "20px",
+            backgroundColor: theme.colors.bgCard,
+            border: `1px solid ${theme.colors.border}`,
+            padding: "24px",
           }}
         >
-          <div>
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: theme.colors.textMuted,
-                marginBottom: "4px",
-              }}
-            >
-              Weight Progress
-            </div>
-            {filteredWeightEntries.length >= 2 && (
-              <div style={{ fontSize: "13px", color: theme.colors.textMuted }}>
-                {startingWeight} → {currentWeight} {weightUnit} (
-                <span
-                  style={{
-                    color:
-                      weightChange < 0
-                        ? theme.colors.success
-                        : theme.colors.text,
-                  }}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: "20px",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: theme.colors.textMuted,
+                  marginBottom: "4px",
+                }}
+              >
+                Weight Progress
+              </div>
+              {filteredWeightEntries.length >= 2 && (
+                <div
+                  style={{ fontSize: "13px", color: theme.colors.textMuted }}
                 >
-                  {weightChange > 0 ? "+" : ""}
-                  {weightChange.toFixed(1)}
-                </span>
-                )
+                  {startingWeight} → {currentWeight} {weightUnit} (
+                  <span
+                    style={{
+                      color:
+                        weightChange < 0
+                          ? theme.colors.success
+                          : theme.colors.text,
+                    }}
+                  >
+                    {weightChange > 0 ? "+" : ""}
+                    {weightChange.toFixed(1)}
+                  </span>
+                  )
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="number"
+                value={newWeight}
+                onChange={(e) => setNewWeight(e.target.value)}
+                placeholder="Weight"
+                style={{
+                  width: "80px",
+                  backgroundColor: theme.colors.bg,
+                  border: `1px solid ${theme.colors.border}`,
+                  padding: "10px 12px",
+                  color: theme.colors.text,
+                  fontSize: "14px",
+                }}
+              />
+              <select
+                value={weightUnit}
+                onChange={(e) => setWeightUnit(e.target.value as "kg" | "lbs")}
+                style={{
+                  backgroundColor: theme.colors.bg,
+                  border: `1px solid ${theme.colors.border}`,
+                  padding: "10px 12px",
+                  color: theme.colors.text,
+                  fontSize: "14px",
+                }}
+              >
+                <option value="kg">kg</option>
+                <option value="lbs">lbs</option>
+              </select>
+              <button
+                onClick={addWeightEntry}
+                style={{
+                  padding: "10px 16px",
+                  backgroundColor: theme.colors.accent,
+                  border: "none",
+                  color: accentTextColor,
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Log
+              </button>
+            </div>
+          </div>
+          <div style={{ height: "200px" }}>
+            {weightData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weightData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={theme.colors.border}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    stroke={theme.colors.textMuted}
+                    fontSize={11}
+                  />
+                  <YAxis
+                    stroke={theme.colors.textMuted}
+                    fontSize={11}
+                    domain={["dataMin - 2", "dataMax + 2"]}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: theme.colors.bgCard,
+                      border: `1px solid ${theme.colors.border}`,
+                      color: theme.colors.text,
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="weight"
+                    stroke={theme.colors.accent}
+                    strokeWidth={2}
+                    dot={{ fill: theme.colors.accent, strokeWidth: 0, r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div
+                style={{
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: theme.colors.textMuted,
+                  fontSize: "13px",
+                }}
+              >
+                Log your first weight to see your progress
               </div>
             )}
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <input
-              type="number"
-              value={newWeight}
-              onChange={(e) => setNewWeight(e.target.value)}
-              placeholder="Weight"
-              style={{
-                width: "80px",
-                backgroundColor: theme.colors.bg,
-                border: `1px solid ${theme.colors.border}`,
-                padding: "10px 12px",
-                color: theme.colors.text,
-                fontSize: "14px",
-              }}
-            />
-            <select
-              value={weightUnit}
-              onChange={(e) => setWeightUnit(e.target.value as "kg" | "lbs")}
-              style={{
-                backgroundColor: theme.colors.bg,
-                border: `1px solid ${theme.colors.border}`,
-                padding: "10px 12px",
-                color: theme.colors.text,
-                fontSize: "14px",
-              }}
+        </div>
+      ) : (
+        <div
+          style={{
+            backgroundColor: theme.colors.bgCard,
+            border: `1px solid ${theme.colors.border}`,
+            padding: "40px 24px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "50%",
+              backgroundColor: theme.colors.bg,
+              border: `1px solid ${theme.colors.border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={theme.colors.textMuted}
+              strokeWidth="2"
             >
-              <option value="kg">kg</option>
-              <option value="lbs">lbs</option>
-            </select>
-            <button
-              onClick={addWeightEntry}
-              style={{
-                padding: "10px 16px",
-                backgroundColor: theme.colors.accent,
-                border: "none",
-                color: accentTextColor,
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Log
-            </button>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
           </div>
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: theme.colors.textMuted,
+              marginBottom: "8px",
+            }}
+          >
+            Weight Tracking
+          </div>
+          <p
+            style={{
+              fontSize: "13px",
+              color: theme.colors.textMuted,
+              marginBottom: "16px",
+            }}
+          >
+            Track your weight progress over time with Pro
+          </p>
+          <button
+            onClick={() => promptUpgrade("weightTracking")}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: theme.colors.text,
+              border: "none",
+              color: theme.colors.bg,
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Upgrade to Pro
+          </button>
         </div>
-        <div style={{ height: "200px" }}>
-          {weightData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={weightData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={theme.colors.border}
-                />
-                <XAxis
-                  dataKey="date"
-                  stroke={theme.colors.textMuted}
-                  fontSize={11}
-                />
-                <YAxis
-                  stroke={theme.colors.textMuted}
-                  fontSize={11}
-                  domain={["dataMin - 2", "dataMax + 2"]}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: theme.colors.bgCard,
-                    border: `1px solid ${theme.colors.border}`,
-                    color: theme.colors.text,
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="weight"
-                  stroke={theme.colors.accent}
-                  strokeWidth={2}
-                  dot={{ fill: theme.colors.accent, strokeWidth: 0, r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div
-              style={{
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: theme.colors.textMuted,
-                fontSize: "13px",
-              }}
-            >
-              Log your first weight to see your progress
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

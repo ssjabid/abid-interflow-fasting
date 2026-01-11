@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
+import { useSubscription } from "../../context/SubscriptionContext";
 import {
   getLeaderboard,
   updateLeaderboardEntry,
@@ -23,6 +24,7 @@ const CATEGORIES: { id: LeaderboardCategory; label: string; suffix: string }[] =
 
 export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
   const { theme } = useTheme();
+  const { canAccessFeature, promptUpgrade } = useSubscription();
   const accentTextColor =
     theme.mode === "light"
       ? theme.accent === "default"
@@ -187,6 +189,106 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
     if (rank === 3) return { color: "#CD7F32", fontWeight: 600 as const };
     return { color: theme.colors.textMuted, fontWeight: 500 as const };
   };
+
+  // Check if user has access to leaderboard
+  if (!canAccessFeature("leaderboard")) {
+    return (
+      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ marginBottom: "24px" }}>
+          <h2
+            style={{
+              fontSize: "20px",
+              fontWeight: 600,
+              color: theme.colors.text,
+              marginBottom: "4px",
+            }}
+          >
+            Leaderboard
+          </h2>
+          <p style={{ fontSize: "14px", color: theme.colors.textMuted }}>
+            See how you rank against other fasters
+          </p>
+        </div>
+
+        {/* Locked State */}
+        <div
+          style={{
+            backgroundColor: theme.colors.bgCard,
+            border: `1px solid ${theme.colors.border}`,
+            padding: "60px 40px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              backgroundColor: theme.colors.bg,
+              border: `1px solid ${theme.colors.border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 20px",
+            }}
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={theme.colors.textMuted}
+              strokeWidth="2"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+
+          <h3
+            style={{
+              fontSize: "18px",
+              fontWeight: 600,
+              color: theme.colors.text,
+              marginBottom: "8px",
+            }}
+          >
+            Leaderboard is a Pro Feature
+          </h3>
+
+          <p
+            style={{
+              fontSize: "14px",
+              color: theme.colors.textMuted,
+              marginBottom: "24px",
+              maxWidth: "300px",
+              margin: "0 auto 24px",
+              lineHeight: 1.5,
+            }}
+          >
+            Upgrade to Pro to compete with other fasters and see your global
+            ranking.
+          </p>
+
+          <button
+            onClick={() => promptUpgrade("leaderboard")}
+            style={{
+              padding: "14px 28px",
+              backgroundColor: theme.colors.text,
+              border: "none",
+              color: theme.colors.bg,
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Upgrade to Pro
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto" }}>
