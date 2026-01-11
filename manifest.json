@@ -42,14 +42,24 @@
       "short_name": "Start",
       "description": "Start a new fasting session",
       "url": "/?action=start",
-      "icons": [{ "src": "/icons/icon-192x192.svg", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/abid-water-fasting-interflow-192x192.svg",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "View History",
       "short_name": "History",
       "description": "View your fasting history",
       "url": "/?view=history",
-      "icons": [{ "src": "/icons/icon-192x192.svg", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/abid-water-fasting-interflow-192x192.svg",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "related_applications": [],
