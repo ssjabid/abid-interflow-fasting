@@ -6,15 +6,17 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
+import { useTheme } from "./ThemeContext";
 import {
   type Subscription,
   type SubscriptionTier,
   type SubscriptionFeatures,
   getSubscription,
   startFreeTrial,
+  activateWithKey,
   TIER_FEATURES,
   getTierDisplayName,
-  getTierBadgeColor,
+  getTierColors,
   isProtocolAvailable,
   FREE_TIER_LIMITS,
 } from "../services/subscription";
@@ -25,12 +27,15 @@ interface SubscriptionContextType {
   tier: SubscriptionTier;
   features: SubscriptionFeatures;
   tierName: string;
-  tierColor: string;
+  tierColors: { bg: string; border: string; text: string };
   isPro: boolean;
   isInfinite: boolean;
   canAccessFeature: (feature: keyof SubscriptionFeatures) => boolean;
   canAccessProtocol: (protocolId: string) => boolean;
   startTrial: () => Promise<boolean>;
+  activateKey: (
+    key: string
+  ) => Promise<{ success: boolean; tier?: SubscriptionTier; error?: string }>;
   showUpgradeModal: boolean;
   setShowUpgradeModal: (show: boolean) => void;
   upgradeFeature: keyof SubscriptionFeatures | null;
@@ -50,6 +55,7 @@ export function useSubscription() {
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
+  const { theme } = useTheme();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -87,7 +93,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const tier = subscription?.tier || "free";
   const features = TIER_FEATURES[tier];
   const tierName = getTierDisplayName(tier);
-  const tierColor = getTierBadgeColor(tier);
+  const tierColors = getTierColors(tier, theme.mode);
   const isPro = tier === "pro" || tier === "infinite";
   const isInfinite = tier === "infinite";
 
@@ -109,6 +115,18 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     return success;
   };
 
+  const activateKey = async (
+    key: string
+  ): Promise<{ success: boolean; tier?: SubscriptionTier; error?: string }> => {
+    if (!currentUser) return { success: false, error: "Not logged in" };
+    const result = await activateWithKey(currentUser.uid, key);
+    if (result.success) {
+      const sub = await getSubscription(currentUser.uid, currentUser.email);
+      setSubscription(sub);
+    }
+    return result;
+  };
+
   const promptUpgrade = (feature: keyof SubscriptionFeatures) => {
     setUpgradeFeature(feature);
     setShowUpgradeModal(true);
@@ -128,12 +146,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         tier,
         features,
         tierName,
-        tierColor,
+        tierColors,
         isPro,
         isInfinite,
         canAccessFeature,
         canAccessProtocol,
         startTrial,
+        activateKey,
         showUpgradeModal,
         setShowUpgradeModal,
         upgradeFeature,

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import {
   useSubscription,
@@ -13,7 +14,11 @@ interface UpgradeModalProps {
 
 export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
   const { theme } = useTheme();
-  const { startTrial, subscription } = useSubscription();
+  const { startTrial, activateKey, subscription } = useSubscription();
+  const [activationKey, setActivationKey] = useState("");
+  const [keyError, setKeyError] = useState("");
+  const [keySuccess, setKeySuccess] = useState("");
+  const [isActivating, setIsActivating] = useState(false);
 
   const handleStartTrial = async () => {
     const success = await startTrial();
@@ -24,6 +29,34 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
         "You've already used your free trial. Please upgrade to Pro to continue."
       );
     }
+  };
+
+  const handleActivateKey = async () => {
+    if (!activationKey.trim()) {
+      setKeyError("Please enter an activation key");
+      return;
+    }
+
+    setIsActivating(true);
+    setKeyError("");
+    setKeySuccess("");
+
+    const result = await activateKey(activationKey);
+
+    if (result.success) {
+      setKeySuccess(
+        `Successfully activated ${
+          result.tier === "infinite" ? "Infinite" : "Pro"
+        }!`
+      );
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } else {
+      setKeyError(result.error || "Invalid activation key");
+    }
+
+    setIsActivating(false);
   };
 
   const featureName = feature ? FEATURE_NAMES[feature] : null;
@@ -105,13 +138,14 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
             ×
           </button>
 
-          {/* Crown icon */}
+          {/* Star icon */}
           <div
             style={{
               width: "56px",
               height: "56px",
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
+              backgroundColor: theme.colors.bgHover,
+              border: `1px solid ${theme.colors.border}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -123,10 +157,10 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
               height="28"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#FFFFFF"
+              stroke={theme.colors.text}
               strokeWidth="2"
             >
-              <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
           </div>
 
@@ -156,6 +190,85 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
           )}
         </div>
 
+        {/* Activation Key Section */}
+        <div
+          style={{
+            padding: "24px",
+            borderBottom: `1px solid ${theme.colors.border}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: theme.colors.textMuted,
+              marginBottom: "12px",
+            }}
+          >
+            Have an activation key?
+          </div>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <input
+              type="text"
+              value={activationKey}
+              onChange={(e) => {
+                setActivationKey(e.target.value.toUpperCase());
+                setKeyError("");
+                setKeySuccess("");
+              }}
+              placeholder="Enter activation key"
+              style={{
+                flex: 1,
+                padding: "12px 16px",
+                backgroundColor: theme.colors.bg,
+                border: `1px solid ${
+                  keyError
+                    ? "#EF4444"
+                    : keySuccess
+                    ? "#10B981"
+                    : theme.colors.border
+                }`,
+                color: theme.colors.text,
+                fontSize: "14px",
+                fontFamily: "monospace",
+                letterSpacing: "0.1em",
+              }}
+            />
+            <button
+              onClick={handleActivateKey}
+              disabled={isActivating}
+              style={{
+                padding: "12px 20px",
+                backgroundColor: theme.colors.text,
+                border: "none",
+                color: theme.colors.bg,
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: isActivating ? "not-allowed" : "pointer",
+                opacity: isActivating ? 0.7 : 1,
+              }}
+            >
+              {isActivating ? "..." : "Activate"}
+            </button>
+          </div>
+          {keyError && (
+            <div
+              style={{ color: "#EF4444", fontSize: "12px", marginTop: "8px" }}
+            >
+              {keyError}
+            </div>
+          )}
+          {keySuccess && (
+            <div
+              style={{ color: "#10B981", fontSize: "12px", marginTop: "8px" }}
+            >
+              {keySuccess}
+            </div>
+          )}
+        </div>
+
         {/* Pricing cards */}
         <div
           style={{
@@ -169,7 +282,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
           <div
             style={{
               backgroundColor: theme.colors.bg,
-              border: `2px solid #3B82F6`,
+              border: `2px solid ${theme.colors.text}`,
               padding: "24px",
               position: "relative",
             }}
@@ -180,8 +293,8 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 top: "-12px",
                 left: "50%",
                 transform: "translateX(-50%)",
-                backgroundColor: "#3B82F6",
-                color: "#FFFFFF",
+                backgroundColor: theme.colors.text,
+                color: theme.colors.bg,
                 fontSize: "11px",
                 fontWeight: 600,
                 letterSpacing: "0.05em",
@@ -242,7 +355,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                     height="16"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#10B981"
+                    stroke={theme.colors.text}
                     strokeWidth="2"
                   >
                     <polyline points="20 6 9 17 4 12" />
@@ -258,9 +371,9 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 style={{
                   width: "100%",
                   padding: "14px",
-                  backgroundColor: "#3B82F6",
+                  backgroundColor: theme.colors.text,
                   border: "none",
-                  color: "#FFFFFF",
+                  color: theme.colors.bg,
                   fontSize: "14px",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -272,17 +385,16 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
             ) : (
               <button
                 onClick={() => {
-                  // TODO: Integrate Stripe
                   alert(
-                    "Stripe payment coming soon! For now, contact support."
+                    "Stripe payment coming soon! For now, use an activation key."
                   );
                 }}
                 style={{
                   width: "100%",
                   padding: "14px",
-                  backgroundColor: "#3B82F6",
+                  backgroundColor: theme.colors.text,
                   border: "none",
-                  color: "#FFFFFF",
+                  color: theme.colors.bg,
                   fontSize: "14px",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -322,8 +434,9 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 top: "-12px",
                 left: "50%",
                 transform: "translateX(-50%)",
-                background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
-                color: "#FFFFFF",
+                backgroundColor: theme.colors.bgHover,
+                border: `1px solid ${theme.colors.border}`,
+                color: theme.colors.text,
                 fontSize: "11px",
                 fontWeight: 600,
                 letterSpacing: "0.05em",
@@ -342,7 +455,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 marginBottom: "4px",
               }}
             >
-              Infinite Pro
+              Infinite
             </div>
 
             <div style={{ marginBottom: "16px" }}>
@@ -385,7 +498,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                     height="16"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#F59E0B"
+                    stroke={theme.colors.text}
                     strokeWidth="2"
                   >
                     <polyline points="20 6 9 17 4 12" />
@@ -397,15 +510,16 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
 
             <button
               onClick={() => {
-                // TODO: Integrate Stripe
-                alert("Stripe payment coming soon! For now, contact support.");
+                alert(
+                  "Stripe payment coming soon! For now, use an activation key."
+                );
               }}
               style={{
                 width: "100%",
                 padding: "14px",
                 backgroundColor: "transparent",
-                border: `1px solid #F59E0B`,
-                color: "#F59E0B",
+                border: `1px solid ${theme.colors.border}`,
+                color: theme.colors.text,
                 fontSize: "14px",
                 fontWeight: 600,
                 cursor: "pointer",

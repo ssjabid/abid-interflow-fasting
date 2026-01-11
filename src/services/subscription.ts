@@ -11,9 +11,25 @@ export interface Subscription {
   trialEndDate?: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  activatedWithKey?: string; // Track which key was used
 }
 
-// Admin emails from environment variable (comma-separated)
+// Activation keys from environment variables
+const getActivationKeys = (): { infinite: string[]; pro: string[] } => {
+  const infiniteKeys = (import.meta.env.VITE_INFINITE_ACTIVATION_KEYS || "")
+    .split(",")
+    .map((key: string) => key.trim().toUpperCase())
+    .filter((key: string) => key.length > 0);
+
+  const proKeys = (import.meta.env.VITE_PRO_ACTIVATION_KEYS || "")
+    .split(",")
+    .map((key: string) => key.trim().toUpperCase())
+    .filter((key: string) => key.length > 0);
+
+  return { infinite: infiniteKeys, pro: proKeys };
+};
+
+// Admin emails from environment variable (comma-separated) - these get automatic Infinite Pro
 const getAdminEmails = (): string[] => {
   const envEmails = import.meta.env.VITE_ADMIN_EMAILS || "";
   return envEmails
@@ -27,6 +43,20 @@ export const isAdminEmail = (email: string | null | undefined): boolean => {
   if (!email) return false;
   const adminEmails = getAdminEmails();
   return adminEmails.includes(email.toLowerCase());
+};
+
+// Validate activation key and return tier
+export const validateActivationKey = (key: string): SubscriptionTier | null => {
+  const keys = getActivationKeys();
+  const upperKey = key.trim().toUpperCase();
+
+  if (keys.infinite.includes(upperKey)) {
+    return "infinite";
+  }
+  if (keys.pro.includes(upperKey)) {
+    return "pro";
+  }
+  return null;
 };
 
 // Feature definitions
@@ -97,13 +127,31 @@ export const getSubscription = async (
   userId: string,
   userEmail?: string | null
 ): Promise<Subscription> => {
-  // Check if admin first
+  // Check if admin first - admins always get infinite
   if (isAdminEmail(userEmail)) {
-    return {
+    // Still save to Firebase so it persists
+    const adminSub: Subscription = {
       tier: "infinite",
       startDate: new Date().toISOString(),
       trialUsed: true,
+      activatedWithKey: "ADMIN_EMAIL",
     };
+
+    // Check if already saved
+    try {
+      const subRef = doc(db, "subscriptions", userId);
+      const subSnap = await getDoc(subRef);
+      if (!subSnap.exists() || subSnap.data()?.tier !== "infinite") {
+        await setDoc(subRef, {
+          ...adminSub,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch (e) {
+      console.error("Error saving admin subscription:", e);
+    }
+
+    return adminSub;
   }
 
   try {
@@ -112,6 +160,11 @@ export const getSubscription = async (
 
     if (subSnap.exists()) {
       const sub = subSnap.data() as Subscription;
+
+      // If activated with key, don't expire
+      if (sub.activatedWithKey) {
+        return sub;
+      }
 
       // Check if pro subscription has expired
       if (sub.tier === "pro" && sub.endDate) {
@@ -124,7 +177,11 @@ export const getSubscription = async (
 
       // Check if trial has expired
       if (sub.trialEndDate && new Date(sub.trialEndDate) < new Date()) {
-        if (sub.tier === "pro" && !sub.stripeSubscriptionId) {
+        if (
+          sub.tier === "pro" &&
+          !sub.stripeSubscriptionId &&
+          !sub.activatedWithKey
+        ) {
           await setSubscription(userId, { ...sub, tier: "free" });
           return { ...sub, tier: "free" };
         }
@@ -165,6 +222,32 @@ export const setSubscription = async (
     });
   } catch (error) {
     console.error("Error setting subscription:", error);
+  }
+};
+
+// Activate subscription with key
+export const activateWithKey = async (
+  userId: string,
+  key: string
+): Promise<{ success: boolean; tier?: SubscriptionTier; error?: string }> => {
+  const tier = validateActivationKey(key);
+
+  if (!tier) {
+    return { success: false, error: "Invalid activation key" };
+  }
+
+  try {
+    const subscription: Subscription = {
+      tier,
+      startDate: new Date().toISOString(),
+      trialUsed: true,
+      activatedWithKey: key.trim().toUpperCase(),
+    };
+
+    await setSubscription(userId, subscription);
+    return { success: true, tier };
+  } catch (error) {
+    return { success: false, error: "Failed to activate subscription" };
   }
 };
 
@@ -262,18 +345,57 @@ export const getTierDisplayName = (tier: SubscriptionTier): string => {
     case "pro":
       return "Pro";
     case "infinite":
-      return "Infinite Pro";
+      return "Infinite";
   }
 };
 
-// Get tier badge color
-export const getTierBadgeColor = (tier: SubscriptionTier): string => {
-  switch (tier) {
-    case "free":
-      return "#6B6B70";
-    case "pro":
-      return "#3B82F6";
-    case "infinite":
-      return "#F59E0B";
+// Get tier colors based on theme mode
+export const getTierColors = (
+  tier: SubscriptionTier,
+  mode: "dark" | "light"
+): { bg: string; border: string; text: string } => {
+  if (mode === "dark") {
+    switch (tier) {
+      case "free":
+        return {
+          bg: "rgba(107, 107, 112, 0.15)",
+          border: "rgba(107, 107, 112, 0.3)",
+          text: "#9A9A9E",
+        };
+      case "pro":
+        return {
+          bg: "rgba(255, 255, 255, 0.1)",
+          border: "rgba(255, 255, 255, 0.2)",
+          text: "#FFFFFF",
+        };
+      case "infinite":
+        return {
+          bg: "rgba(255, 255, 255, 0.15)",
+          border: "rgba(255, 255, 255, 0.3)",
+          text: "#FFFFFF",
+        };
+    }
+  } else {
+    // Light mode
+    switch (tier) {
+      case "free":
+        return {
+          bg: "rgba(107, 107, 112, 0.1)",
+          border: "rgba(107, 107, 112, 0.2)",
+          text: "#6B6B70",
+        };
+      case "pro":
+        return {
+          bg: "rgba(17, 24, 39, 0.08)",
+          border: "rgba(17, 24, 39, 0.15)",
+          text: "#111827",
+        };
+      case "infinite":
+        return {
+          bg: "rgba(17, 24, 39, 0.12)",
+          border: "rgba(17, 24, 39, 0.2)",
+          text: "#111827",
+        };
+    }
   }
 };
