@@ -43,6 +43,7 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
   const [userRank, setUserRank] = useState<number | null>(null);
   const [showOptInModal, setShowOptInModal] = useState(false);
   const [isTabTransitioning, setIsTabTransitioning] = useState(false);
+  const [isOnLeaderboard, setIsOnLeaderboard] = useState(false);
 
   const handleCategoryChange = (category: LeaderboardCategory) => {
     if (category === activeCategory) return;
@@ -81,9 +82,10 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
 
         setLeaderboard(data);
 
-        // Find user rank
+        // Find user rank and check if user is on leaderboard
         const userIndex = data.findIndex((entry) => entry.odId === userId);
         setUserRank(userIndex >= 0 ? userIndex + 1 : null);
+        setIsOnLeaderboard(userIndex >= 0);
       } catch (e) {
         console.error("Error fetching leaderboard:", e);
         if (mounted) {
@@ -309,8 +311,8 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
         </p>
       </div>
 
-      {/* Opt-in banner */}
-      {!userOptedIn && (
+      {/* Opt-in banner - only show if not opted in AND not already on leaderboard */}
+      {!userOptedIn && !isOnLeaderboard && (
         <div
           style={{
             backgroundColor: theme.colors.accent + "10",

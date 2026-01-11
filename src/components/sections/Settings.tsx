@@ -1408,202 +1408,181 @@ export default function Settings({
             )}
           </div>
 
-          {/* Export Data */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingBottom: "20px",
-              borderBottom: `1px solid ${theme.colors.border}`,
-              marginBottom: "20px",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  marginBottom: "4px",
-                }}
-              >
-                <span
+          {/* Export Data - Pro only */}
+          {canAccessFeature("dataExport") && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: "20px",
+                borderBottom: `1px solid ${theme.colors.border}`,
+                marginBottom: "20px",
+              }}
+            >
+              <div>
+                <div
                   style={{
                     fontSize: "15px",
                     fontWeight: 500,
                     color: theme.colors.text,
+                    marginBottom: "4px",
                   }}
                 >
                   Export Data
-                </span>
-                {!canAccessFeature("dataExport") && (
-                  <span
-                    style={{
-                      padding: "2px 6px",
-                      backgroundColor: "#3B82F620",
-                      border: "1px solid #3B82F650",
-                      color: "#3B82F6",
-                      fontSize: "9px",
-                      fontWeight: 600,
-                      letterSpacing: "0.05em",
-                    }}
+                </div>
+                <div
+                  style={{ fontSize: "13px", color: theme.colors.textMuted }}
+                >
+                  Download your fasting history
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  onClick={exportToCSV}
+                  disabled={exportLoading}
+                  onMouseEnter={(e) => {
+                    if (!exportLoading) {
+                      e.currentTarget.style.backgroundColor =
+                        theme.colors.bgHover;
+                      e.currentTarget.style.borderColor = theme.colors.accent;
+                      e.currentTarget.style.color = theme.colors.accent;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.borderColor = theme.colors.border;
+                    e.currentTarget.style.color = theme.colors.text;
+                  }}
+                  style={{
+                    padding: "10px 14px",
+                    minWidth: "70px",
+                    backgroundColor: "transparent",
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.text,
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    cursor: exportLoading ? "not-allowed" : "pointer",
+                    opacity: exportLoading ? 0.5 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
                   >
-                    PRO
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: "13px", color: theme.colors.textMuted }}>
-                Download your fasting history
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7,10 12,15 17,10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  CSV
+                </button>
+                <button
+                  onClick={exportToPDF}
+                  disabled={exportLoading}
+                  onMouseEnter={(e) => {
+                    if (!exportLoading) {
+                      e.currentTarget.style.backgroundColor =
+                        theme.colors.bgHover;
+                      e.currentTarget.style.borderColor = theme.colors.accent;
+                      e.currentTarget.style.color = theme.colors.accent;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.borderColor = theme.colors.border;
+                    e.currentTarget.style.color = theme.colors.text;
+                  }}
+                  style={{
+                    padding: "10px 14px",
+                    minWidth: "70px",
+                    backgroundColor: "transparent",
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.text,
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    cursor: exportLoading ? "not-allowed" : "pointer",
+                    opacity: exportLoading ? 0.5 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14,2 14,8 20,8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                  </svg>
+                  PDF
+                </button>
+                <button
+                  onClick={exportToJSON}
+                  disabled={exportLoading}
+                  onMouseEnter={(e) => {
+                    if (!exportLoading) {
+                      e.currentTarget.style.backgroundColor =
+                        theme.colors.bgHover;
+                      e.currentTarget.style.borderColor = theme.colors.accent;
+                      e.currentTarget.style.color = theme.colors.accent;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.borderColor = theme.colors.border;
+                    e.currentTarget.style.color = theme.colors.text;
+                  }}
+                  style={{
+                    padding: "10px 14px",
+                    minWidth: "70px",
+                    backgroundColor: "transparent",
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.text,
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    cursor: exportLoading ? "not-allowed" : "pointer",
+                    opacity: exportLoading ? 0.5 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7,10 12,15 17,10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  JSON
+                </button>
               </div>
             </div>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <button
-                onClick={() =>
-                  canAccessFeature("dataExport")
-                    ? exportToCSV()
-                    : promptUpgrade("dataExport")
-                }
-                disabled={exportLoading}
-                onMouseEnter={(e) => {
-                  if (!exportLoading) {
-                    e.currentTarget.style.backgroundColor =
-                      theme.colors.bgHover;
-                    e.currentTarget.style.borderColor = theme.colors.accent;
-                    e.currentTarget.style.color = theme.colors.accent;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.borderColor = theme.colors.border;
-                  e.currentTarget.style.color = theme.colors.text;
-                }}
-                style={{
-                  padding: "10px 16px",
-                  backgroundColor: "transparent",
-                  border: `1px solid ${theme.colors.border}`,
-                  color: theme.colors.text,
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  cursor: exportLoading ? "not-allowed" : "pointer",
-                  opacity: exportLoading ? 0.5 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7,10 12,15 17,10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                CSV
-              </button>
-              <button
-                onClick={() =>
-                  canAccessFeature("dataExport")
-                    ? exportToPDF()
-                    : promptUpgrade("dataExport")
-                }
-                disabled={exportLoading}
-                onMouseEnter={(e) => {
-                  if (!exportLoading) {
-                    e.currentTarget.style.backgroundColor =
-                      theme.colors.bgHover;
-                    e.currentTarget.style.borderColor = theme.colors.accent;
-                    e.currentTarget.style.color = theme.colors.accent;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.borderColor = theme.colors.border;
-                  e.currentTarget.style.color = theme.colors.text;
-                }}
-                style={{
-                  padding: "10px 16px",
-                  backgroundColor: "transparent",
-                  border: `1px solid ${theme.colors.border}`,
-                  color: theme.colors.text,
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  cursor: exportLoading ? "not-allowed" : "pointer",
-                  opacity: exportLoading ? 0.5 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14,2 14,8 20,8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                </svg>
-                PDF
-              </button>
-              <button
-                onClick={exportToJSON}
-                disabled={exportLoading}
-                onMouseEnter={(e) => {
-                  if (!exportLoading) {
-                    e.currentTarget.style.backgroundColor =
-                      theme.colors.bgHover;
-                    e.currentTarget.style.borderColor = theme.colors.accent;
-                    e.currentTarget.style.color = theme.colors.accent;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.borderColor = theme.colors.border;
-                  e.currentTarget.style.color = theme.colors.text;
-                }}
-                style={{
-                  padding: "10px 16px",
-                  backgroundColor: "transparent",
-                  border: `1px solid ${theme.colors.border}`,
-                  color: theme.colors.text,
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  cursor: exportLoading ? "not-allowed" : "pointer",
-                  opacity: exportLoading ? 0.5 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7,10 12,15 17,10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                JSON
-              </button>
-            </div>
-          </div>
+          )}
 
           {/* Clear All Data */}
           <div
