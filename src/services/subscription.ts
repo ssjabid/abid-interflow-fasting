@@ -9,14 +9,36 @@ export interface Subscription {
   endDate?: string; // undefined for infinite
   trialUsed: boolean;
   trialEndDate?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
 }
 
+// Admin emails from environment variable (comma-separated)
+const getAdminEmails = (): string[] => {
+  const envEmails = import.meta.env.VITE_ADMIN_EMAILS || "";
+  return envEmails
+    .split(",")
+    .map((email: string) => email.trim().toLowerCase())
+    .filter((email: string) => email.length > 0);
+};
+
+// Check if email is an admin
+export const isAdminEmail = (email: string | null | undefined): boolean => {
+  if (!email) return false;
+  const adminEmails = getAdminEmails();
+  return adminEmails.includes(email.toLowerCase());
+};
+
+// Feature definitions
 export interface SubscriptionFeatures {
   unlimitedHistory: boolean;
   allProtocols: boolean;
+  customFasts: boolean;
   advancedAnalytics: boolean;
   dataExport: boolean;
-  customFasts: boolean;
+  leaderboard: boolean;
+  weightTracking: boolean;
+  moodTracking: boolean;
   prioritySupport: boolean;
   founderBadge: boolean;
 }
@@ -26,27 +48,36 @@ export const TIER_FEATURES: Record<SubscriptionTier, SubscriptionFeatures> = {
   free: {
     unlimitedHistory: false,
     allProtocols: false,
+    customFasts: false,
     advancedAnalytics: false,
     dataExport: false,
-    customFasts: false,
+    leaderboard: false,
+    weightTracking: false,
+    moodTracking: false,
     prioritySupport: false,
     founderBadge: false,
   },
   pro: {
     unlimitedHistory: true,
     allProtocols: true,
+    customFasts: true,
     advancedAnalytics: true,
     dataExport: true,
-    customFasts: true,
+    leaderboard: true,
+    weightTracking: true,
+    moodTracking: true,
     prioritySupport: true,
     founderBadge: false,
   },
   infinite: {
     unlimitedHistory: true,
     allProtocols: true,
+    customFasts: true,
     advancedAnalytics: true,
     dataExport: true,
-    customFasts: true,
+    leaderboard: true,
+    weightTracking: true,
+    moodTracking: true,
     prioritySupport: true,
     founderBadge: true,
   },
@@ -58,10 +89,23 @@ export const FREE_TIER_LIMITS = {
   protocols: ["16:8", "18:6", "20:4"], // Only basic protocols
 };
 
+// Pro-only protocols
+export const PRO_PROTOCOLS = ["omad", "warrior", "water-fast"];
+
 // Get user's subscription
 export const getSubscription = async (
-  userId: string
+  userId: string,
+  userEmail?: string | null
 ): Promise<Subscription> => {
+  // Check if admin first
+  if (isAdminEmail(userEmail)) {
+    return {
+      tier: "infinite",
+      startDate: new Date().toISOString(),
+      trialUsed: true,
+    };
+  }
+
   try {
     const subRef = doc(db, "subscriptions", userId);
     const subSnap = await getDoc(subRef);
@@ -80,7 +124,7 @@ export const getSubscription = async (
 
       // Check if trial has expired
       if (sub.trialEndDate && new Date(sub.trialEndDate) < new Date()) {
-        if (sub.tier === "pro") {
+        if (sub.tier === "pro" && !sub.stripeSubscriptionId) {
           await setSubscription(userId, { ...sub, tier: "free" });
           return { ...sub, tier: "free" };
         }
@@ -152,7 +196,11 @@ export const startFreeTrial = async (userId: string): Promise<boolean> => {
 };
 
 // Upgrade to Pro (monthly)
-export const upgradeToPro = async (userId: string): Promise<void> => {
+export const upgradeToPro = async (
+  userId: string,
+  stripeCustomerId?: string,
+  stripeSubscriptionId?: string
+): Promise<void> => {
   const endDate = new Date();
   endDate.setMonth(endDate.getMonth() + 1);
 
@@ -163,11 +211,16 @@ export const upgradeToPro = async (userId: string): Promise<void> => {
     startDate: new Date().toISOString(),
     endDate: endDate.toISOString(),
     trialUsed: current.trialUsed,
+    stripeCustomerId,
+    stripeSubscriptionId,
   });
 };
 
 // Upgrade to Infinite Pro (lifetime)
-export const upgradeToInfinite = async (userId: string): Promise<void> => {
+export const upgradeToInfinite = async (
+  userId: string,
+  stripeCustomerId?: string
+): Promise<void> => {
   const current = await getSubscription(userId);
 
   await setSubscription(userId, {
@@ -175,6 +228,7 @@ export const upgradeToInfinite = async (userId: string): Promise<void> => {
     startDate: new Date().toISOString(),
     // No endDate for lifetime
     trialUsed: current.trialUsed,
+    stripeCustomerId,
   });
 };
 
@@ -189,4 +243,37 @@ export const hasFeature = (
 // Get features for current tier
 export const getFeatures = (tier: SubscriptionTier): SubscriptionFeatures => {
   return TIER_FEATURES[tier];
+};
+
+// Check if protocol is available for tier
+export const isProtocolAvailable = (
+  protocolId: string,
+  tier: SubscriptionTier
+): boolean => {
+  if (tier === "pro" || tier === "infinite") return true;
+  return FREE_TIER_LIMITS.protocols.includes(protocolId);
+};
+
+// Get tier display name
+export const getTierDisplayName = (tier: SubscriptionTier): string => {
+  switch (tier) {
+    case "free":
+      return "Basic";
+    case "pro":
+      return "Pro";
+    case "infinite":
+      return "Infinite Pro";
+  }
+};
+
+// Get tier badge color
+export const getTierBadgeColor = (tier: SubscriptionTier): string => {
+  switch (tier) {
+    case "free":
+      return "#6B6B70";
+    case "pro":
+      return "#3B82F6";
+    case "infinite":
+      return "#F59E0B";
+  }
 };

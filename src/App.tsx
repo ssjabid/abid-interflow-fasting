@@ -3,6 +3,7 @@ import { useAuth } from "./context/AuthContext";
 import { useFasts } from "./context/FastContext";
 import { useTheme } from "./context/ThemeContext";
 import { useAchievements } from "./context/AchievementContext";
+import { useSubscription } from "./context/SubscriptionContext";
 import type { UserProfile } from "./types";
 import Login from "./components/Auth/Login";
 import Signup from "./components/Auth/Signup";
@@ -17,6 +18,7 @@ import LandingPage from "./components/LandingPage";
 import Onboarding from "./components/Onboarding";
 import AchievementUnlock from "./components/ui/AchievementUnlock";
 import InstallPrompt from "./components/ui/InstallPrompt";
+import UpgradeModal from "./components/ui/UpgradeModal";
 import { loadProfile } from "./services/profile";
 
 type View =
@@ -33,6 +35,8 @@ function App() {
   const { theme } = useTheme();
   const { checkForNewAchievements, pendingUnlock, dismissUnlock } =
     useAchievements();
+  const { showUpgradeModal, setShowUpgradeModal, upgradeFeature } =
+    useSubscription();
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [currentView, setCurrentView] = useState<View>("dashboard");
@@ -468,6 +472,14 @@ function App() {
         <AchievementUnlock
           achievementId={pendingUnlock}
           onClose={dismissUnlock}
+        />
+      )}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <UpgradeModal
+          onClose={() => setShowUpgradeModal(false)}
+          feature={upgradeFeature}
         />
       )}
 

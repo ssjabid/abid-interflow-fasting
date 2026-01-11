@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useTheme, THEME_ACCENTS } from "../../context/ThemeContext";
 import { useFasts } from "../../context/FastContext";
+import { useSubscription } from "../../context/SubscriptionContext";
 import type { ThemeMode, ThemeAccent } from "../../context/ThemeContext";
 import type { FastingSchedule } from "../../types";
 import { PROTOCOLS } from "../../types";
 import ShareModal from "../ShareModal";
+import ProBadge from "../ui/ProBadge";
 
 interface SettingsProps {
   userId: string;
@@ -21,6 +23,7 @@ export default function Settings({
 }: SettingsProps) {
   const { theme, setMode, setAccent } = useTheme();
   const { clearAllData, fasts } = useFasts();
+  const { canAccessFeature, promptUpgrade } = useSubscription();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
@@ -409,16 +412,25 @@ export default function Settings({
 
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-      <h2
+      <div
         style={{
-          fontSize: "20px",
-          fontWeight: 600,
-          color: theme.colors.text,
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
           marginBottom: "8px",
         }}
       >
-        Settings
-      </h2>
+        <h2
+          style={{
+            fontSize: "20px",
+            fontWeight: 600,
+            color: theme.colors.text,
+          }}
+        >
+          Settings
+        </h2>
+        <ProBadge size="sm" />
+      </div>
       <p
         style={{
           color: theme.colors.textMuted,
@@ -1410,13 +1422,36 @@ export default function Settings({
             <div>
               <div
                 style={{
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  color: theme.colors.text,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
                   marginBottom: "4px",
                 }}
               >
-                Export Data
+                <span
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: 500,
+                    color: theme.colors.text,
+                  }}
+                >
+                  Export Data
+                </span>
+                {!canAccessFeature("dataExport") && (
+                  <span
+                    style={{
+                      padding: "2px 6px",
+                      backgroundColor: "#3B82F620",
+                      border: "1px solid #3B82F650",
+                      color: "#3B82F6",
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    PRO
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: "13px", color: theme.colors.textMuted }}>
                 Download your fasting history
@@ -1424,7 +1459,11 @@ export default function Settings({
             </div>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               <button
-                onClick={exportToCSV}
+                onClick={() =>
+                  canAccessFeature("dataExport")
+                    ? exportToCSV()
+                    : promptUpgrade("dataExport")
+                }
                 disabled={exportLoading}
                 onMouseEnter={(e) => {
                   if (!exportLoading) {
@@ -1469,7 +1508,11 @@ export default function Settings({
                 CSV
               </button>
               <button
-                onClick={exportToPDF}
+                onClick={() =>
+                  canAccessFeature("dataExport")
+                    ? exportToPDF()
+                    : promptUpgrade("dataExport")
+                }
                 disabled={exportLoading}
                 onMouseEnter={(e) => {
                   if (!exportLoading) {
