@@ -24,13 +24,8 @@ export default function Settings({
 }: SettingsProps) {
   const { theme, setMode, setAccent } = useTheme();
   const { clearAllData, fasts } = useFasts();
-  const { canAccessFeature, promptUpgrade } = useSubscription();
-  const {
-    currentUser,
-    updateUserEmail,
-    updateUserPassword,
-    sendPasswordReset,
-  } = useAuth();
+  const { canAccessFeature } = useSubscription();
+  const { currentUser, updateUserEmail, updateUserPassword } = useAuth();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
