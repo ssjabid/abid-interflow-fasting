@@ -403,12 +403,26 @@ export default function Settings({
     }
   };
 
-  const handleResetOnboarding = () => {
-    const profile = localStorage.getItem(`profile_${userId}`);
-    if (profile) {
-      const parsed = JSON.parse(profile);
-      parsed.onboardingComplete = false;
-      localStorage.setItem(`profile_${userId}`, JSON.stringify(parsed));
+  const handleResetOnboarding = async () => {
+    try {
+      // Update localStorage
+      const profile = localStorage.getItem(`profile_${userId}`);
+      if (profile) {
+        const parsed = JSON.parse(profile);
+        parsed.onboardingComplete = false;
+        localStorage.setItem(`profile_${userId}`, JSON.stringify(parsed));
+      }
+
+      // Also update Firebase
+      const { doc, updateDoc } = await import("firebase/firestore");
+      const { db } = await import("../../config/firebase");
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, { onboardingComplete: false });
+
+      window.location.reload();
+    } catch (error) {
+      console.error("Error resetting onboarding:", error);
+      // Still reload to try localStorage approach
       window.location.reload();
     }
   };

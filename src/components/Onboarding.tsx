@@ -20,6 +20,8 @@ type Step =
 export default function Onboarding({ userId, onComplete }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
   const [profile, setProfile] = useState<UserProfile>({
+    firstName: "",
+    lastName: "",
     name: "",
     age: undefined,
     gender: undefined,
@@ -75,9 +77,13 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
   };
 
   const handleComplete = async () => {
+    const fullName = `${profile.firstName || ""} ${
+      profile.lastName || ""
+    }`.trim();
     const finalProfile: UserProfile = {
       ...profile,
-      displayName: profile.name, // Set displayName for leaderboard
+      name: fullName, // Keep for backwards compatibility
+      displayName: profile.firstName || fullName, // Use first name for display
       onboardingComplete: true,
       schedule: schedule.enabled
         ? {
@@ -271,7 +277,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                   marginBottom: "32px",
                 }}
               >
-                {/* Name */}
+                {/* First Name */}
                 <div>
                   <label
                     style={{
@@ -284,15 +290,49 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                       marginBottom: "12px",
                     }}
                   >
-                    Your Name
+                    First Name
                   </label>
                   <input
                     type="text"
-                    value={profile.name || ""}
+                    value={profile.firstName || ""}
                     onChange={(e) =>
-                      setProfile({ ...profile, name: e.target.value })
+                      setProfile({ ...profile, firstName: e.target.value })
                     }
-                    placeholder="Enter your name"
+                    placeholder="Enter your first name"
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#0B0B0C",
+                      border: "1px solid #1F1F24",
+                      padding: "16px",
+                      color: "#F5F5F5",
+                      fontSize: "16px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                {/* Last Name */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "#6B6B6B",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.lastName || ""}
+                    onChange={(e) =>
+                      setProfile({ ...profile, lastName: e.target.value })
+                    }
+                    placeholder="Enter your last name"
                     style={{
                       width: "100%",
                       backgroundColor: "#0B0B0C",
@@ -431,18 +471,20 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                 </button>
                 <button
                   onClick={nextStep}
-                  disabled={!profile.name?.trim()}
+                  disabled={!profile.firstName?.trim()}
                   style={{
                     flex: 2,
                     padding: "16px 24px",
-                    backgroundColor: profile.name?.trim()
+                    backgroundColor: profile.firstName?.trim()
                       ? "#F5F5F5"
                       : "#1F1F24",
                     border: "none",
-                    color: profile.name?.trim() ? "#0B0B0C" : "#6B6B6B",
+                    color: profile.firstName?.trim() ? "#0B0B0C" : "#6B6B6B",
                     fontSize: "14px",
                     fontWeight: 600,
-                    cursor: profile.name?.trim() ? "pointer" : "not-allowed",
+                    cursor: profile.firstName?.trim()
+                      ? "pointer"
+                      : "not-allowed",
                     transition: "all 0.2s ease",
                   }}
                 >

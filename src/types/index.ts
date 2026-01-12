@@ -37,6 +37,8 @@ export interface FastingSchedule {
 }
 
 export interface UserProfile {
+  firstName?: string;
+  lastName?: string;
   name?: string;
   age?: number;
   gender?: "male" | "female" | "other" | "prefer-not-to-say";

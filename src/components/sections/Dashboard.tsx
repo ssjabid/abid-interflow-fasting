@@ -38,7 +38,9 @@ export default function Dashboard({
       setWeeklyGoal(profile.weeklyGoal || 112);
       setSchedule(profile.schedule || null);
       setPreferredProtocol(profile.preferredProtocol || "16:8");
-      setUserName(profile.name || profile.displayName || "");
+      setUserName(
+        profile.firstName || profile.displayName || profile.name || ""
+      );
     }
   }, [userId]);
 
