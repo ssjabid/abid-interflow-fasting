@@ -37,6 +37,9 @@ export interface FastingSchedule {
 }
 
 export interface UserProfile {
+  name?: string;
+  age?: number;
+  gender?: "male" | "female" | "other" | "prefer-not-to-say";
   dailyGoal: number;
   weeklyGoal: number;
   preferredProtocol: string;
@@ -48,6 +51,8 @@ export interface UserProfile {
   createdAt: string;
   schedule?: FastingSchedule;
   achievements?: string[];
+  displayName?: string;
+  leaderboardOptIn?: boolean;
 }
 
 export interface Protocol {

@@ -9,20 +9,37 @@ export interface LoginProps {
 
 export default function Login(props: LoginProps) {
   const { onSwitchToSignup, onClose, isVisible = true } = props;
-  const { loginWithGoogle, loginWithFacebook, loginWithX, loginWithEmail } =
+  const { loginWithGoogle, loginWithX, loginWithEmail, sendPasswordReset } =
     useAuth();
   const [loading, setLoading] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
-  const handleSocialLogin = async (provider: "google" | "facebook" | "x") => {
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await sendPasswordReset(email);
+      setResetSent(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to send reset email");
+    }
+    setLoading(false);
+  };
+
+  const handleSocialLogin = async (provider: "google" | "x") => {
     try {
       setLoading(true);
       setError("");
       if (provider === "google") await loginWithGoogle();
-      else if (provider === "facebook") await loginWithFacebook();
       else if (provider === "x") await loginWithX();
       // Don't call onClose - App.tsx will handle it via useEffect
     } catch (err: any) {
@@ -192,7 +209,132 @@ export default function Login(props: LoginProps) {
           </div>
         )}
 
-        {showEmailForm ? (
+        {showForgotPassword ? (
+          <>
+            {/* Forgot Password Form */}
+            <div style={{ textAlign: "center", marginBottom: "24px" }}>
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  backgroundColor: "#1F1F24",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#F5F5F5"
+                  strokeWidth="2"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <h3
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "#F5F5F5",
+                  marginBottom: "8px",
+                }}
+              >
+                Reset Password
+              </h3>
+              <p style={{ fontSize: "13px", color: "#6B6B6B" }}>
+                {resetSent
+                  ? "Check your email for a reset link"
+                  : "Enter your email and we'll send you a reset link"}
+              </p>
+            </div>
+
+            {resetSent ? (
+              <div
+                style={{
+                  padding: "16px",
+                  backgroundColor: "#10B98120",
+                  border: "1px solid #10B981",
+                  marginBottom: "24px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    color: "#10B981",
+                    fontSize: "14px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Password reset email sent!
+                </p>
+                <p style={{ color: "#6B6B6B", fontSize: "12px" }}>
+                  Check your inbox for instructions to reset your password.
+                </p>
+              </div>
+            ) : (
+              <div style={{ marginBottom: "24px" }}>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px 16px",
+                    backgroundColor: "transparent",
+                    border: "1px solid #1F1F24",
+                    color: "#F5F5F5",
+                    fontSize: "14px",
+                    marginBottom: "16px",
+                    boxSizing: "border-box",
+                  }}
+                />
+                <button
+                  onClick={handleForgotPassword}
+                  disabled={loading || !email}
+                  style={{
+                    width: "100%",
+                    padding: "16px 24px",
+                    backgroundColor: "#F5F5F5",
+                    border: "none",
+                    color: "#0B0B0C",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    opacity: loading || !email ? 0.5 : 1,
+                  }}
+                >
+                  {loading ? "Sending..." : "Send Reset Link"}
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setShowForgotPassword(false);
+                setResetSent(false);
+                setError("");
+              }}
+              style={{
+                width: "100%",
+                padding: "14px",
+                backgroundColor: "transparent",
+                border: "1px solid #1F1F24",
+                color: "#6B6B6B",
+                fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              Back to login
+            </button>
+          </>
+        ) : showEmailForm ? (
           <>
             {/* Email form */}
             <form onSubmit={handleEmailLogin}>
@@ -209,10 +351,11 @@ export default function Login(props: LoginProps) {
                     border: "1px solid #1F1F24",
                     color: "#F5F5F5",
                     fontSize: "14px",
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
-              <div style={{ marginBottom: "24px" }}>
+              <div style={{ marginBottom: "16px" }}>
                 <input
                   type="password"
                   placeholder="Password"
@@ -225,9 +368,33 @@ export default function Login(props: LoginProps) {
                     border: "1px solid #1F1F24",
                     color: "#F5F5F5",
                     fontSize: "14px",
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
+
+              {/* Forgot Password Link */}
+              <div style={{ textAlign: "right", marginBottom: "24px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setError("");
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#6B6B6B",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "3px",
+                  }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading || !email || !password}

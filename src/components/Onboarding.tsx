@@ -10,6 +10,7 @@ interface OnboardingProps {
 
 type Step =
   | "welcome"
+  | "profile"
   | "protocol"
   | "schedule"
   | "goals"
@@ -19,6 +20,9 @@ type Step =
 export default function Onboarding({ userId, onComplete }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
   const [profile, setProfile] = useState<UserProfile>({
+    name: "",
+    age: undefined,
+    gender: undefined,
     dailyGoal: 16,
     weeklyGoal: 112,
     preferredProtocol: "16:8",
@@ -34,6 +38,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
 
   const steps: Step[] = [
     "welcome",
+    "profile",
     "protocol",
     "schedule",
     "goals",
@@ -72,6 +77,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
   const handleComplete = async () => {
     const finalProfile: UserProfile = {
       ...profile,
+      displayName: profile.name, // Set displayName for leaderboard
       onboardingComplete: true,
       schedule: schedule.enabled
         ? {
@@ -220,6 +226,232 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
             </div>
           )}
 
+          {/* Profile Step */}
+          {currentStep === "profile" && (
+            <div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  color: "#6B6B6B",
+                  marginBottom: "12px",
+                }}
+              >
+                Step 1 of 5
+              </div>
+
+              <h2
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 600,
+                  color: "#F5F5F5",
+                  marginBottom: "8px",
+                }}
+              >
+                Tell us about yourself
+              </h2>
+
+              <p
+                style={{
+                  fontSize: "14px",
+                  color: "#6B6B6B",
+                  marginBottom: "32px",
+                }}
+              >
+                This helps us personalize your fasting experience.
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "24px",
+                  marginBottom: "32px",
+                }}
+              >
+                {/* Name */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "#6B6B6B",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    Your Name
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.name || ""}
+                    onChange={(e) =>
+                      setProfile({ ...profile, name: e.target.value })
+                    }
+                    placeholder="Enter your name"
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#0B0B0C",
+                      border: "1px solid #1F1F24",
+                      padding: "16px",
+                      color: "#F5F5F5",
+                      fontSize: "16px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                {/* Age */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "#6B6B6B",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    Age (optional)
+                  </label>
+                  <input
+                    type="number"
+                    value={profile.age || ""}
+                    onChange={(e) =>
+                      setProfile({
+                        ...profile,
+                        age: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
+                      })
+                    }
+                    placeholder="Enter your age"
+                    min="13"
+                    max="120"
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#0B0B0C",
+                      border: "1px solid #1F1F24",
+                      padding: "16px",
+                      color: "#F5F5F5",
+                      fontSize: "16px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "#6B6B6B",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    Gender (optional)
+                  </label>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, 1fr)",
+                      gap: "12px",
+                    }}
+                  >
+                    {[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                      { value: "other", label: "Other" },
+                      {
+                        value: "prefer-not-to-say",
+                        label: "Prefer not to say",
+                      },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() =>
+                          setProfile({
+                            ...profile,
+                            gender: option.value as any,
+                          })
+                        }
+                        style={{
+                          padding: "14px 16px",
+                          backgroundColor:
+                            profile.gender === option.value
+                              ? "#1F1F24"
+                              : "#0B0B0C",
+                          border: `1px solid ${
+                            profile.gender === option.value
+                              ? "#F5F5F5"
+                              : "#1F1F24"
+                          }`,
+                          color:
+                            profile.gender === option.value
+                              ? "#F5F5F5"
+                              : "#6B6B6B",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={prevStep}
+                  style={{
+                    flex: 1,
+                    padding: "16px 24px",
+                    backgroundColor: "transparent",
+                    border: "1px solid #1F1F24",
+                    color: "#6B6B6B",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Back
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!profile.name?.trim()}
+                  style={{
+                    flex: 2,
+                    padding: "16px 24px",
+                    backgroundColor: profile.name?.trim()
+                      ? "#F5F5F5"
+                      : "#1F1F24",
+                    border: "none",
+                    color: profile.name?.trim() ? "#0B0B0C" : "#6B6B6B",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: profile.name?.trim() ? "pointer" : "not-allowed",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Protocol Selection Step */}
           {currentStep === "protocol" && (
             <div>
@@ -233,7 +465,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                   marginBottom: "12px",
                 }}
               >
-                Step 1 of 3
+                Step 2 of 5
               </div>
 
               <h2
@@ -394,7 +626,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                   marginBottom: "12px",
                 }}
               >
-                Step 2 of 3
+                Step 3 of 5
               </div>
 
               <h2
@@ -673,7 +905,7 @@ export default function Onboarding({ userId, onComplete }: OnboardingProps) {
                   marginBottom: "12px",
                 }}
               >
-                Step 3 of 3
+                Step 4 of 5
               </div>
 
               <h2

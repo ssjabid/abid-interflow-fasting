@@ -9,6 +9,11 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updateEmail,
+  updatePassword,
+  sendPasswordResetEmail,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { auth } from "../config/firebase";
@@ -21,6 +26,12 @@ interface AuthContextType {
   loginWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUserEmail: (newEmail: string, currentPassword: string) => Promise<void>;
+  updateUserPassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -65,6 +76,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
   };
 
+  const updateUserEmail = async (newEmail: string, currentPassword: string) => {
+    if (!currentUser || !currentUser.email)
+      throw new Error("No user logged in");
+
+    // Re-authenticate first
+    const credential = EmailAuthProvider.credential(
+      currentUser.email,
+      currentPassword
+    );
+    await reauthenticateWithCredential(currentUser, credential);
+
+    // Update email
+    await updateEmail(currentUser, newEmail);
+  };
+
+  const updateUserPassword = async (
+    currentPassword: string,
+    newPassword: string
+  ) => {
+    if (!currentUser || !currentUser.email)
+      throw new Error("No user logged in");
+
+    // Re-authenticate first
+    const credential = EmailAuthProvider.credential(
+      currentUser.email,
+      currentPassword
+    );
+    await reauthenticateWithCredential(currentUser, credential);
+
+    // Update password
+    await updatePassword(currentUser, newPassword);
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -82,6 +130,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginWithEmail,
     signUpWithEmail,
     logout,
+    updateUserEmail,
+    updateUserPassword,
+    sendPasswordReset,
     loading,
   };
 

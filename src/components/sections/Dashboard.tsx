@@ -28,6 +28,7 @@ export default function Dashboard({
   const [weeklyGoal, setWeeklyGoal] = useState(112);
   const [schedule, setSchedule] = useState<FastingSchedule | null>(null);
   const [preferredProtocol, setPreferredProtocol] = useState("16:8");
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem(`profile_${userId}`);
@@ -37,6 +38,7 @@ export default function Dashboard({
       setWeeklyGoal(profile.weeklyGoal || 112);
       setSchedule(profile.schedule || null);
       setPreferredProtocol(profile.preferredProtocol || "16:8");
+      setUserName(profile.name || profile.displayName || "");
     }
   }, [userId]);
 
@@ -121,8 +123,42 @@ export default function Dashboard({
   const dailyProgress = Math.min((todayHours / dailyGoal) * 100, 100);
   const weeklyProgress = Math.min((thisWeekHours / weeklyGoal) * 100, 100);
 
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+      {/* Welcome Message */}
+      {userName && (
+        <div style={{ marginBottom: "24px" }}>
+          <h1
+            style={{
+              fontSize: "24px",
+              fontWeight: 600,
+              color: theme.colors.text,
+              marginBottom: "4px",
+            }}
+          >
+            {getGreeting()}, {userName}
+          </h1>
+          <p
+            style={{
+              fontSize: "14px",
+              color: theme.colors.textMuted,
+            }}
+          >
+            {activeFast
+              ? "You're currently fasting. Keep going!"
+              : "Ready to start your fasting journey today?"}
+          </p>
+        </div>
+      )}
+
       {/* Schedule Reminder */}
       {schedule && schedule.enabled && (
         <ScheduleReminder
