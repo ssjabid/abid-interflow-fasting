@@ -28,9 +28,6 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
   const [keySuccess, setKeySuccess] = useState("");
   const [isActivating, setIsActivating] = useState(false);
   const [isLoading, setIsLoading] = useState<PlanType | null>(null);
-  const [selectedBilling, setSelectedBilling] = useState<"monthly" | "yearly">(
-    "monthly"
-  );
 
   const stripeEnabled = isStripeConfigured();
   const pricing = getPricingInfo();
@@ -90,9 +87,13 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
     setIsLoading(plan);
     try {
       await redirectToCheckout(currentUser.uid, currentUser.email, plan);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Checkout error:", error);
-      alert(error.message || "Failed to start checkout. Please try again.");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to start checkout. Please try again.";
+      alert(errorMessage);
       setIsLoading(null);
     }
   };
@@ -316,7 +317,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
             gap: "16px",
           }}
         >
-          {/* Pro Plan */}
+          {/* Pro Monthly Plan */}
           <div
             style={{
               backgroundColor: theme.colors.bg,
@@ -354,117 +355,19 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
               Pro
             </div>
 
-            {/* Billing toggle */}
-            <div
-              style={{
-                display: "flex",
-                backgroundColor: theme.colors.bgHover,
-                padding: "4px",
-                marginBottom: "16px",
-                gap: "4px",
-              }}
-            >
-              <button
-                onClick={() => setSelectedBilling("monthly")}
-                style={{
-                  flex: 1,
-                  padding: "8px",
-                  backgroundColor:
-                    selectedBilling === "monthly"
-                      ? theme.colors.text
-                      : "transparent",
-                  border: "none",
-                  color:
-                    selectedBilling === "monthly"
-                      ? theme.colors.bg
-                      : theme.colors.textMuted,
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                }}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setSelectedBilling("yearly")}
-                style={{
-                  flex: 1,
-                  padding: "8px",
-                  backgroundColor:
-                    selectedBilling === "yearly"
-                      ? theme.colors.text
-                      : "transparent",
-                  border: "none",
-                  color:
-                    selectedBilling === "yearly"
-                      ? theme.colors.bg
-                      : theme.colors.textMuted,
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                }}
-              >
-                Yearly
-                <span
-                  style={{
-                    marginLeft: "4px",
-                    backgroundColor: "#10B981",
-                    color: "#fff",
-                    padding: "2px 4px",
-                    borderRadius: "2px",
-                    fontSize: "9px",
-                  }}
-                >
-                  -33%
-                </span>
-              </button>
-            </div>
-
             <div style={{ marginBottom: "16px" }}>
-              {selectedBilling === "monthly" ? (
-                <>
-                  <span
-                    style={{
-                      fontSize: "36px",
-                      fontWeight: 700,
-                      color: theme.colors.text,
-                    }}
-                  >
-                    {pricing.pro_monthly.price}
-                  </span>
-                  <span
-                    style={{ fontSize: "14px", color: theme.colors.textMuted }}
-                  >
-                    {pricing.pro_monthly.period}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span
-                    style={{
-                      fontSize: "36px",
-                      fontWeight: 700,
-                      color: theme.colors.text,
-                    }}
-                  >
-                    {pricing.pro_yearly.price}
-                  </span>
-                  <span
-                    style={{ fontSize: "14px", color: theme.colors.textMuted }}
-                  >
-                    {pricing.pro_yearly.period}
-                  </span>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#10B981",
-                      marginTop: "4px",
-                    }}
-                  >
-                    Save {pricing.pro_yearly.savings}
-                  </div>
-                </>
-              )}
+              <span
+                style={{
+                  fontSize: "36px",
+                  fontWeight: 700,
+                  color: theme.colors.text,
+                }}
+              >
+                {pricing.pro_monthly.price}
+              </span>
+              <span style={{ fontSize: "14px", color: theme.colors.textMuted }}>
+                {pricing.pro_monthly.period}
+              </span>
             </div>
 
             <ul
@@ -520,11 +423,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
               </button>
             ) : (
               <button
-                onClick={() =>
-                  handleStripeCheckout(
-                    selectedBilling === "monthly" ? "pro_monthly" : "pro_yearly"
-                  )
-                }
+                onClick={() => handleStripeCheckout("pro_monthly")}
                 disabled={isLoading !== null}
                 style={{
                   width: "100%",
@@ -539,9 +438,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                   transition: "all 0.2s ease",
                 }}
               >
-                {isLoading === "pro_monthly" || isLoading === "pro_yearly"
-                  ? "Loading..."
-                  : "Subscribe Now"}
+                {isLoading === "pro_monthly" ? "Loading..." : "Subscribe Now"}
               </button>
             )}
 
@@ -554,10 +451,8 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                   marginTop: "8px",
                 }}
               >
-                1 month free, then{" "}
-                {selectedBilling === "monthly"
-                  ? pricing.pro_monthly.price + "/month"
-                  : pricing.pro_yearly.price + "/year"}
+                1 month free, then {pricing.pro_monthly.price}
+                {pricing.pro_monthly.period}
               </p>
             )}
           </div>
@@ -595,13 +490,13 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 fontSize: "18px",
                 fontWeight: 600,
                 color: theme.colors.text,
-                marginBottom: "4px",
+                marginBottom: "12px",
               }}
             >
               Infinite
             </div>
 
-            <div style={{ marginBottom: "16px", marginTop: "52px" }}>
+            <div style={{ marginBottom: "16px" }}>
               <span
                 style={{
                   fontSize: "36px",
