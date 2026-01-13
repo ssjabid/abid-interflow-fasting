@@ -5,7 +5,14 @@ import {
   FEATURE_NAMES,
   FEATURE_DESCRIPTIONS,
 } from "../../context/SubscriptionContext";
+import { useAuth } from "../../context/AuthContext";
+import {
+  redirectToCheckout,
+  isStripeConfigured,
+  getPricingInfo,
+} from "../../services/stripe";
 import type { SubscriptionFeatures } from "../../services/subscription";
+import type { PlanType } from "../../services/stripe";
 
 interface UpgradeModalProps {
   onClose: () => void;
@@ -14,11 +21,19 @@ interface UpgradeModalProps {
 
 export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
   const { theme } = useTheme();
+  const { currentUser } = useAuth();
   const { startTrial, activateKey, subscription } = useSubscription();
   const [activationKey, setActivationKey] = useState("");
   const [keyError, setKeyError] = useState("");
   const [keySuccess, setKeySuccess] = useState("");
   const [isActivating, setIsActivating] = useState(false);
+  const [isLoading, setIsLoading] = useState<PlanType | null>(null);
+  const [selectedBilling, setSelectedBilling] = useState<"monthly" | "yearly">(
+    "monthly"
+  );
+
+  const stripeEnabled = isStripeConfigured();
+  const pricing = getPricingInfo();
 
   const handleStartTrial = async () => {
     const success = await startTrial();
@@ -57,6 +72,29 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
     }
 
     setIsActivating(false);
+  };
+
+  const handleStripeCheckout = async (plan: PlanType) => {
+    if (!currentUser?.uid || !currentUser?.email) {
+      alert("Please make sure you're logged in with an email address.");
+      return;
+    }
+
+    if (!stripeEnabled) {
+      alert(
+        "Payment system is being set up. Please use an activation key for now."
+      );
+      return;
+    }
+
+    setIsLoading(plan);
+    try {
+      await redirectToCheckout(currentUser.uid, currentUser.email, plan);
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      alert(error.message || "Failed to start checkout. Please try again.");
+      setIsLoading(null);
+    }
   };
 
   const featureName = feature ? FEATURE_NAMES[feature] : null;
@@ -310,25 +348,123 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 fontSize: "18px",
                 fontWeight: 600,
                 color: theme.colors.text,
-                marginBottom: "4px",
+                marginBottom: "12px",
               }}
             >
               Pro
             </div>
 
-            <div style={{ marginBottom: "16px" }}>
-              <span
+            {/* Billing toggle */}
+            <div
+              style={{
+                display: "flex",
+                backgroundColor: theme.colors.bgHover,
+                padding: "4px",
+                marginBottom: "16px",
+                gap: "4px",
+              }}
+            >
+              <button
+                onClick={() => setSelectedBilling("monthly")}
                 style={{
-                  fontSize: "36px",
-                  fontWeight: 700,
-                  color: theme.colors.text,
+                  flex: 1,
+                  padding: "8px",
+                  backgroundColor:
+                    selectedBilling === "monthly"
+                      ? theme.colors.text
+                      : "transparent",
+                  border: "none",
+                  color:
+                    selectedBilling === "monthly"
+                      ? theme.colors.bg
+                      : theme.colors.textMuted,
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  cursor: "pointer",
                 }}
               >
-                £7
-              </span>
-              <span style={{ fontSize: "14px", color: theme.colors.textMuted }}>
-                /month
-              </span>
+                Monthly
+              </button>
+              <button
+                onClick={() => setSelectedBilling("yearly")}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  backgroundColor:
+                    selectedBilling === "yearly"
+                      ? theme.colors.text
+                      : "transparent",
+                  border: "none",
+                  color:
+                    selectedBilling === "yearly"
+                      ? theme.colors.bg
+                      : theme.colors.textMuted,
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                Yearly
+                <span
+                  style={{
+                    marginLeft: "4px",
+                    backgroundColor: "#10B981",
+                    color: "#fff",
+                    padding: "2px 4px",
+                    borderRadius: "2px",
+                    fontSize: "9px",
+                  }}
+                >
+                  -33%
+                </span>
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              {selectedBilling === "monthly" ? (
+                <>
+                  <span
+                    style={{
+                      fontSize: "36px",
+                      fontWeight: 700,
+                      color: theme.colors.text,
+                    }}
+                  >
+                    {pricing.pro_monthly.price}
+                  </span>
+                  <span
+                    style={{ fontSize: "14px", color: theme.colors.textMuted }}
+                  >
+                    {pricing.pro_monthly.period}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span
+                    style={{
+                      fontSize: "36px",
+                      fontWeight: 700,
+                      color: theme.colors.text,
+                    }}
+                  >
+                    {pricing.pro_yearly.price}
+                  </span>
+                  <span
+                    style={{ fontSize: "14px", color: theme.colors.textMuted }}
+                  >
+                    {pricing.pro_yearly.period}
+                  </span>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#10B981",
+                      marginTop: "4px",
+                    }}
+                  >
+                    Save {pricing.pro_yearly.savings}
+                  </div>
+                </>
+              )}
             </div>
 
             <ul
@@ -384,11 +520,12 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
               </button>
             ) : (
               <button
-                onClick={() => {
-                  alert(
-                    "Stripe payment coming soon! For now, use an activation key."
-                  );
-                }}
+                onClick={() =>
+                  handleStripeCheckout(
+                    selectedBilling === "monthly" ? "pro_monthly" : "pro_yearly"
+                  )
+                }
+                disabled={isLoading !== null}
                 style={{
                   width: "100%",
                   padding: "14px",
@@ -397,11 +534,14 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                   color: theme.colors.bg,
                   fontSize: "14px",
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: isLoading !== null ? "not-allowed" : "pointer",
+                  opacity: isLoading !== null ? 0.7 : 1,
                   transition: "all 0.2s ease",
                 }}
               >
-                Subscribe Now
+                {isLoading === "pro_monthly" || isLoading === "pro_yearly"
+                  ? "Loading..."
+                  : "Subscribe Now"}
               </button>
             )}
 
@@ -414,7 +554,10 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                   marginTop: "8px",
                 }}
               >
-                1 month free, then £7/month
+                1 month free, then{" "}
+                {selectedBilling === "monthly"
+                  ? pricing.pro_monthly.price + "/month"
+                  : pricing.pro_yearly.price + "/year"}
               </p>
             )}
           </div>
@@ -458,7 +601,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
               Infinite
             </div>
 
-            <div style={{ marginBottom: "16px" }}>
+            <div style={{ marginBottom: "16px", marginTop: "52px" }}>
               <span
                 style={{
                   fontSize: "36px",
@@ -466,11 +609,11 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                   color: theme.colors.text,
                 }}
               >
-                £99
+                {pricing.infinite.price}
               </span>
               <span style={{ fontSize: "14px", color: theme.colors.textMuted }}>
                 {" "}
-                one-time
+                {pricing.infinite.period}
               </span>
             </div>
 
@@ -509,11 +652,8 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
             </ul>
 
             <button
-              onClick={() => {
-                alert(
-                  "Stripe payment coming soon! For now, use an activation key."
-                );
-              }}
+              onClick={() => handleStripeCheckout("infinite")}
+              disabled={isLoading !== null}
               style={{
                 width: "100%",
                 padding: "14px",
@@ -522,11 +662,12 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 color: theme.colors.text,
                 fontSize: "14px",
                 fontWeight: 600,
-                cursor: "pointer",
+                cursor: isLoading !== null ? "not-allowed" : "pointer",
+                opacity: isLoading !== null ? 0.7 : 1,
                 transition: "all 0.2s ease",
               }}
             >
-              Get Lifetime Access
+              {isLoading === "infinite" ? "Loading..." : "Get Lifetime Access"}
             </button>
 
             <p
@@ -549,6 +690,30 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
             textAlign: "center",
           }}
         >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              marginBottom: "12px",
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={theme.colors.textMuted}
+              strokeWidth="2"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span style={{ fontSize: "12px", color: theme.colors.textMuted }}>
+              Secure payment powered by Stripe
+            </span>
+          </div>
           <button
             onClick={onClose}
             style={{
