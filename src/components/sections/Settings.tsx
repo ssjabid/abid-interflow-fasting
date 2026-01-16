@@ -24,7 +24,7 @@ export default function Settings({
 }: SettingsProps) {
   const { theme, setMode, setAccent } = useTheme();
   const { clearAllData, fasts } = useFasts();
-  const { canAccessFeature } = useSubscription();
+  const { canAccessFeature, promptUpgrade } = useSubscription();
   const { currentUser, updateUserEmail, updateUserPassword } = useAuth();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -269,136 +269,6 @@ export default function Settings({
     } catch (error) {
       console.error("Error exporting JSON:", error);
       alert("Failed to export data. Please try again.");
-      setExportLoading(false);
-    }
-  };
-
-  // Export to PDF (printable report)
-  const exportToPDF = () => {
-    setExportLoading(true);
-    try {
-      const completedFasts = fasts.filter((f) => f.status === "completed");
-
-      if (completedFasts.length === 0) {
-        alert("No completed fasts to export.");
-        setExportLoading(false);
-        return;
-      }
-
-      const sortedFasts = completedFasts.sort(
-        (a, b) =>
-          new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-      );
-
-      const moodLabels = [
-        "",
-        "Struggling",
-        "Difficult",
-        "Neutral",
-        "Good",
-        "Great",
-      ];
-      const energyLabels = [
-        "",
-        "Very Low",
-        "Low",
-        "Normal",
-        "High",
-        "Very High",
-      ];
-
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Interflow - Fasting Report</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #111; }
-            h1 { font-size: 24px; margin-bottom: 8px; }
-            .subtitle { color: #666; font-size: 14px; margin-bottom: 32px; }
-            .stats { display: flex; gap: 32px; margin-bottom: 32px; padding: 20px; background: #f5f5f5; }
-            .stat { text-align: center; }
-            .stat-value { font-size: 28px; font-weight: 700; }
-            .stat-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-            table { width: 100%; border-collapse: collapse; margin-top: 24px; }
-            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; font-size: 13px; }
-            th { background: #f5f5f5; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
-            .notes { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            @media print { body { padding: 20px; } }
-          </style>
-        </head>
-        <body>
-          <h1>Fasting Report</h1>
-          <p class="subtitle">Generated on ${new Date().toLocaleDateString()} • Interflow</p>
-          
-          <div class="stats">
-            <div class="stat">
-              <div class="stat-value">${totalFasts}</div>
-              <div class="stat-label">Total Fasts</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">${Math.round(totalHours)}</div>
-              <div class="stat-label">Total Hours</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">${currentStreak}</div>
-              <div class="stat-label">Current Streak</div>
-            </div>
-          </div>
-
-          <h2 style="font-size: 16px; margin-bottom: 16px;">Fasting History</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Duration</th>
-                <th>Protocol</th>
-                <th>Mood</th>
-                <th>Energy</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${sortedFasts
-                .map((fast) => {
-                  const protocol = PROTOCOLS.find(
-                    (p) => p.id === fast.protocol
-                  );
-                  return `
-                  <tr>
-                    <td>${new Date(fast.startTime).toLocaleDateString()}</td>
-                    <td>${(fast.duration / 60).toFixed(1)}h</td>
-                    <td>${protocol?.name || fast.protocol || "-"}</td>
-                    <td>${fast.mood ? moodLabels[fast.mood] : "-"}</td>
-                    <td>${
-                      fast.energyLevel ? energyLabels[fast.energyLevel] : "-"
-                    }</td>
-                    <td class="notes">${fast.notes || "-"}</td>
-                  </tr>
-                `;
-                })
-                .join("")}
-            </tbody>
-          </table>
-        </body>
-        </html>
-      `;
-
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-        }, 250);
-      }
-
-      setExportLoading(false);
-    } catch (error) {
-      console.error("Error exporting PDF:", error);
-      alert("Failed to export PDF. Please try again.");
       setExportLoading(false);
     }
   };
@@ -1636,181 +1506,190 @@ export default function Settings({
             )}
           </div>
 
-          {/* Export Data - Pro only */}
-          {canAccessFeature("dataExport") && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: "20px",
-                borderBottom: `1px solid ${theme.colors.border}`,
-                marginBottom: "20px",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: 500,
-                    color: theme.colors.text,
-                    marginBottom: "4px",
-                  }}
-                >
-                  Export Data
-                </div>
-                <div
-                  style={{ fontSize: "13px", color: theme.colors.textMuted }}
-                >
-                  Download your fasting history
-                </div>
+          {/* Export Data - Shows for all, locked for basic users */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              paddingBottom: "20px",
+              borderBottom: `1px solid ${theme.colors.border}`,
+              marginBottom: "20px",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  color: theme.colors.text,
+                  marginBottom: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                Export Data
+                {!canAccessFeature("dataExport") && (
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 500,
+                      color: theme.colors.textMuted,
+                      backgroundColor: theme.colors.bgHover,
+                      padding: "2px 8px",
+                      borderRadius: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Pro
+                  </span>
+                )}
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  onClick={exportToCSV}
-                  disabled={exportLoading}
-                  onMouseEnter={(e) => {
-                    if (!exportLoading) {
-                      e.currentTarget.style.backgroundColor =
-                        theme.colors.bgHover;
-                      e.currentTarget.style.borderColor = theme.colors.accent;
-                      e.currentTarget.style.color = theme.colors.accent;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.style.borderColor = theme.colors.border;
-                    e.currentTarget.style.color = theme.colors.text;
-                  }}
-                  style={{
-                    padding: "10px 14px",
-                    minWidth: "70px",
-                    backgroundColor: "transparent",
-                    border: `1px solid ${theme.colors.border}`,
-                    color: theme.colors.text,
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    cursor: exportLoading ? "not-allowed" : "pointer",
-                    opacity: exportLoading ? 0.5 : 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7,10 12,15 17,10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  CSV
-                </button>
-                <button
-                  onClick={exportToPDF}
-                  disabled={exportLoading}
-                  onMouseEnter={(e) => {
-                    if (!exportLoading) {
-                      e.currentTarget.style.backgroundColor =
-                        theme.colors.bgHover;
-                      e.currentTarget.style.borderColor = theme.colors.accent;
-                      e.currentTarget.style.color = theme.colors.accent;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.style.borderColor = theme.colors.border;
-                    e.currentTarget.style.color = theme.colors.text;
-                  }}
-                  style={{
-                    padding: "10px 14px",
-                    minWidth: "70px",
-                    backgroundColor: "transparent",
-                    border: `1px solid ${theme.colors.border}`,
-                    color: theme.colors.text,
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    cursor: exportLoading ? "not-allowed" : "pointer",
-                    opacity: exportLoading ? 0.5 : 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14,2 14,8 20,8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
-                  </svg>
-                  PDF
-                </button>
-                <button
-                  onClick={exportToJSON}
-                  disabled={exportLoading}
-                  onMouseEnter={(e) => {
-                    if (!exportLoading) {
-                      e.currentTarget.style.backgroundColor =
-                        theme.colors.bgHover;
-                      e.currentTarget.style.borderColor = theme.colors.accent;
-                      e.currentTarget.style.color = theme.colors.accent;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                    e.currentTarget.style.borderColor = theme.colors.border;
-                    e.currentTarget.style.color = theme.colors.text;
-                  }}
-                  style={{
-                    padding: "10px 14px",
-                    minWidth: "70px",
-                    backgroundColor: "transparent",
-                    border: `1px solid ${theme.colors.border}`,
-                    color: theme.colors.text,
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    cursor: exportLoading ? "not-allowed" : "pointer",
-                    opacity: exportLoading ? 0.5 : 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7,10 12,15 17,10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  JSON
-                </button>
+              <div style={{ fontSize: "13px", color: theme.colors.textMuted }}>
+                Download your fasting history
               </div>
             </div>
-          )}
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => {
+                  if (!canAccessFeature("dataExport")) {
+                    promptUpgrade("dataExport");
+                  } else {
+                    exportToCSV();
+                  }
+                }}
+                disabled={exportLoading}
+                onMouseEnter={(e) => {
+                  if (!exportLoading) {
+                    e.currentTarget.style.backgroundColor =
+                      theme.colors.bgHover;
+                    e.currentTarget.style.borderColor = theme.colors.accent;
+                    e.currentTarget.style.color = theme.colors.accent;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.borderColor = theme.colors.border;
+                  e.currentTarget.style.color = theme.colors.text;
+                }}
+                style={{
+                  padding: "10px 14px",
+                  minWidth: "70px",
+                  backgroundColor: "transparent",
+                  border: `1px solid ${theme.colors.border}`,
+                  color: theme.colors.text,
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  cursor: exportLoading ? "not-allowed" : "pointer",
+                  opacity: exportLoading ? 0.5 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {!canAccessFeature("dataExport") && (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                )}
+                {canAccessFeature("dataExport") && (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7,10 12,15 17,10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                )}
+                CSV
+              </button>
+              <button
+                onClick={() => {
+                  if (!canAccessFeature("dataExport")) {
+                    promptUpgrade("dataExport");
+                  } else {
+                    exportToJSON();
+                  }
+                }}
+                disabled={exportLoading}
+                onMouseEnter={(e) => {
+                  if (!exportLoading) {
+                    e.currentTarget.style.backgroundColor =
+                      theme.colors.bgHover;
+                    e.currentTarget.style.borderColor = theme.colors.accent;
+                    e.currentTarget.style.color = theme.colors.accent;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.borderColor = theme.colors.border;
+                  e.currentTarget.style.color = theme.colors.text;
+                }}
+                style={{
+                  padding: "10px 14px",
+                  minWidth: "70px",
+                  backgroundColor: "transparent",
+                  border: `1px solid ${theme.colors.border}`,
+                  color: theme.colors.text,
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  cursor: exportLoading ? "not-allowed" : "pointer",
+                  opacity: exportLoading ? 0.5 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {!canAccessFeature("dataExport") && (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                )}
+                {canAccessFeature("dataExport") && (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7,10 12,15 17,10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                )}
+                JSON
+              </button>
+            </div>
+          </div>
 
           {/* Clear All Data */}
           <div

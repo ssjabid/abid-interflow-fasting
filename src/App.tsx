@@ -19,8 +19,8 @@ import Onboarding from "./components/Onboarding";
 import AchievementUnlock from "./components/ui/AchievementUnlock";
 import InstallPrompt from "./components/ui/InstallPrompt";
 import UpgradeModal from "./components/ui/UpgradeModal";
+import PaymentSuccess from "./components/PaymentSuccess";
 import { loadProfile } from "./services/profile";
-import PaymentSuccess from "./components/PaymentSuccess.tsx";
 
 type View =
   | "dashboard"
@@ -47,7 +47,7 @@ function App() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [signupModalVisible, setSignupModalVisible] = useState(false);
-  const prevUserRef = useRef<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<{
     show: boolean;
     plan: string;
@@ -55,6 +55,7 @@ function App() {
     show: false,
     plan: "",
   });
+  const prevUserRef = useRef<string | null>(null);
 
   // Handle modal open with animation
   const openLogin = () => {
@@ -405,7 +406,7 @@ function App() {
                   </div>
 
                   <button
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutConfirm(true)}
                     style={{
                       padding: "10px 24px",
                       backgroundColor: "transparent",
@@ -522,6 +523,131 @@ function App() {
 
       {/* PWA Install Prompt */}
       <InstallPrompt />
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "24px",
+          }}
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <div
+            style={{
+              backgroundColor: theme.colors.bgCard,
+              border: `1px solid ${theme.colors.border}`,
+              padding: "32px",
+              maxWidth: "360px",
+              width: "100%",
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                backgroundColor: theme.colors.bgHover,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 20px",
+              }}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={theme.colors.text}
+                strokeWidth="2"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </div>
+
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: 600,
+                color: theme.colors.text,
+                marginBottom: "8px",
+              }}
+            >
+              Log out?
+            </h3>
+
+            <p
+              style={{
+                fontSize: "14px",
+                color: theme.colors.textMuted,
+                marginBottom: "24px",
+                lineHeight: 1.5,
+              }}
+            >
+              Are you sure you want to log out of your account?
+            </p>
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  backgroundColor: "transparent",
+                  border: `1px solid ${theme.colors.border}`,
+                  color: theme.colors.text,
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme.colors.bgHover;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  handleLogout();
+                }}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  backgroundColor: theme.colors.text,
+                  border: "none",
+                  color: theme.colors.bg,
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
