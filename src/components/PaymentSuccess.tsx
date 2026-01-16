@@ -1,38 +1,102 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import { useTheme } from "../context/ThemeContext";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
 
 interface PaymentSuccessProps {
-  onContinue: () => void;
+  plan: string;
+  onComplete: () => void;
 }
 
-export default function PaymentSuccess({ onContinue }: PaymentSuccessProps) {
+export default function PaymentSuccess({
+  plan,
+  onComplete,
+}: PaymentSuccessProps) {
   const { theme } = useTheme();
-  const [countdown, setCountdown] = useState(5);
+  const { currentUser } = useAuth();
+  const { refreshSubscription } = useSubscription();
+  const [status, setStatus] = useState<"processing" | "success" | "error">(
+    "processing"
+  );
+  const [message, setMessage] = useState("Processing your payment...");
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onContinue();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const activateSubscription = async () => {
+      if (!currentUser?.uid) {
+        setStatus("error");
+        setMessage("Please log in to activate your subscription.");
+        return;
+      }
 
-    return () => clearInterval(timer);
-  }, [onContinue]);
+      try {
+        const tier = plan === "infinite" ? "infinite" : "pro";
+        const now = new Date().toISOString();
+
+        // Calculate end date (1 month for pro, undefined for infinite)
+        let endDate: string | undefined;
+        if (tier === "pro") {
+          const end = new Date();
+          end.setMonth(end.getMonth() + 1);
+          endDate = end.toISOString();
+        }
+
+        // Update subscription in Firebase
+        const subRef = doc(db, "subscriptions", currentUser.uid);
+        await setDoc(
+          subRef,
+          {
+            tier,
+            startDate: now,
+            ...(endDate && { endDate }),
+            trialUsed: true,
+            paidViaStripe: true,
+            plan,
+            updatedAt: now,
+          },
+          { merge: true }
+        );
+
+        // Refresh the subscription context
+        await refreshSubscription();
+
+        setStatus("success");
+        setMessage(
+          tier === "infinite"
+            ? "Welcome to Infinite Pro! You now have lifetime access."
+            : "Welcome to Pro! Your subscription is now active."
+        );
+
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          onComplete();
+        }, 2500);
+      } catch (error) {
+        console.error("Error activating subscription:", error);
+        setStatus("error");
+        setMessage(
+          "There was an issue activating your subscription. Please contact support."
+        );
+      }
+    };
+
+    activateSubscription();
+  }, [currentUser, plan, refreshSubscription, onComplete]);
 
   return (
     <div
       style={{
-        minHeight: "100vh",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: theme.colors.bg,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: theme.colors.bg,
-        padding: "24px",
+        zIndex: 1000,
       }}
     >
       <div
@@ -40,127 +104,123 @@ export default function PaymentSuccess({ onContinue }: PaymentSuccessProps) {
           backgroundColor: theme.colors.bgCard,
           border: `1px solid ${theme.colors.border}`,
           padding: "48px",
-          maxWidth: "480px",
+          maxWidth: "400px",
           width: "100%",
           textAlign: "center",
         }}
       >
-        {/* Success Icon */}
+        {/* Icon */}
         <div
           style={{
-            width: "80px",
-            height: "80px",
+            width: "64px",
+            height: "64px",
             borderRadius: "50%",
-            backgroundColor: "#10B98120",
-            border: "2px solid #10B981",
+            backgroundColor:
+              status === "success"
+                ? "#10B98120"
+                : status === "error"
+                ? "#EF444420"
+                : theme.colors.bgHover,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             margin: "0 auto 24px",
           }}
         >
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#10B981"
-            strokeWidth="2.5"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          {status === "processing" && (
+            <div
+              style={{
+                width: "24px",
+                height: "24px",
+                border: `3px solid ${theme.colors.border}`,
+                borderTopColor: theme.colors.text,
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+          )}
+          {status === "success" && (
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#10B981"
+              strokeWidth="2"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+          {status === "error" && (
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#EF4444"
+              strokeWidth="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          )}
         </div>
 
-        <h1
+        {/* Title */}
+        <h2
           style={{
-            fontSize: "28px",
+            fontSize: "24px",
             fontWeight: 700,
             color: theme.colors.text,
             marginBottom: "12px",
           }}
         >
-          Payment Successful!
-        </h1>
+          {status === "processing" && "Activating..."}
+          {status === "success" && "Payment Successful!"}
+          {status === "error" && "Activation Failed"}
+        </h2>
 
+        {/* Message */}
         <p
           style={{
-            fontSize: "16px",
+            fontSize: "14px",
             color: theme.colors.textMuted,
-            marginBottom: "32px",
             lineHeight: 1.6,
-          }}
-        >
-          Thank you for your purchase! Your subscription has been activated and
-          you now have access to all Pro features.
-        </p>
-
-        <div
-          style={{
-            backgroundColor: theme.colors.bg,
-            border: `1px solid ${theme.colors.border}`,
-            padding: "16px",
             marginBottom: "24px",
           }}
         >
-          <div
-            style={{
-              fontSize: "13px",
-              color: theme.colors.textMuted,
-              marginBottom: "8px",
-            }}
-          >
-            Your account has been upgraded to
-          </div>
-          <div
-            style={{
-              fontSize: "24px",
-              fontWeight: 700,
-              color: theme.colors.text,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-            }}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={theme.colors.text}
-              strokeWidth="2"
-            >
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            Pro
-          </div>
-        </div>
-
-        <button
-          onClick={onContinue}
-          style={{
-            width: "100%",
-            padding: "16px 24px",
-            backgroundColor: theme.colors.text,
-            border: "none",
-            color: theme.colors.bg,
-            fontSize: "16px",
-            fontWeight: 600,
-            cursor: "pointer",
-            marginBottom: "12px",
-          }}
-        >
-          Continue to App
-        </button>
-
-        <p
-          style={{
-            fontSize: "13px",
-            color: theme.colors.textMuted,
-          }}
-        >
-          Redirecting in {countdown} seconds...
+          {message}
         </p>
+
+        {/* Manual continue button for error state */}
+        {status === "error" && (
+          <button
+            onClick={onComplete}
+            style={{
+              padding: "12px 32px",
+              backgroundColor: theme.colors.text,
+              border: "none",
+              color: theme.colors.bg,
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Continue to App
+          </button>
+        )}
+
+        {status === "success" && (
+          <p style={{ fontSize: "12px", color: theme.colors.textMuted }}>
+            Redirecting you now...
+          </p>
+        )}
+
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     </div>
   );

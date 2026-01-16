@@ -20,6 +20,7 @@ import AchievementUnlock from "./components/ui/AchievementUnlock";
 import InstallPrompt from "./components/ui/InstallPrompt";
 import UpgradeModal from "./components/ui/UpgradeModal";
 import { loadProfile } from "./services/profile";
+import PaymentSuccess from "./components/PaymentSuccess.tsx";
 
 type View =
   | "dashboard"
@@ -47,6 +48,13 @@ function App() {
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [signupModalVisible, setSignupModalVisible] = useState(false);
   const prevUserRef = useRef<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState<{
+    show: boolean;
+    plan: string;
+  }>({
+    show: false,
+    plan: "",
+  });
 
   // Handle modal open with animation
   const openLogin = () => {
@@ -148,6 +156,27 @@ function App() {
     };
     checkOnboarding();
   }, [currentUser]);
+
+  // Handle payment success redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get("payment");
+    const plan = params.get("plan");
+
+    if (payment === "success" && plan && currentUser) {
+      setPaymentSuccess({ show: true, plan });
+      // Clean up URL
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (payment === "cancelled") {
+      // Clean up URL on cancel too
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [currentUser]);
+
+  const handlePaymentComplete = () => {
+    setPaymentSuccess({ show: false, plan: "" });
+    setCurrentView("dashboard");
+  };
 
   // Check for achievements when fasts change
   useEffect(() => {
@@ -325,6 +354,14 @@ function App() {
         transition: "background-color 0.3s ease, color 0.3s ease",
       }}
     >
+      {/* Payment Success Handler */}
+      {paymentSuccess.show && currentUser && (
+        <PaymentSuccess
+          plan={paymentSuccess.plan}
+          onComplete={handlePaymentComplete}
+        />
+      )}
+
       {currentUser ? (
         <>
           {showOnboarding ? (
