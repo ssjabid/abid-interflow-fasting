@@ -61,11 +61,24 @@ export default function Statistics({ fasts }: StatisticsProps) {
       : "#FFFFFF";
 
   const [activeTab, setActiveTab] = useState<StatsTab>("overview");
+  const [isTabTransitioning, setIsTabTransitioning] = useState(false);
   const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
   const [newWeight, setNewWeight] = useState("");
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [showDateDropdown, setShowDateDropdown] = useState(false);
+
+  // Handle tab change with smooth transition
+  const handleTabChange = (tab: StatsTab) => {
+    if (tab === activeTab) return;
+    setIsTabTransitioning(true);
+    setTimeout(() => {
+      setActiveTab(tab);
+      setTimeout(() => {
+        setIsTabTransitioning(false);
+      }, 50);
+    }, 150);
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem("weight_entries");
@@ -535,7 +548,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             style={{
               padding: "10px 20px",
               backgroundColor:
@@ -559,62 +572,179 @@ export default function Statistics({ fasts }: StatisticsProps) {
         ))}
       </div>
 
-      {/* OVERVIEW TAB */}
-      {activeTab === "overview" && (
-        <div>
-          {/* Key Metrics */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              gap: "12px",
-              marginBottom: "24px",
-            }}
-          >
-            {[
-              {
-                label: "Total Hours",
-                value: `${totalHours}h`,
-                color: theme.colors.accent,
-              },
-              {
-                label: "Total Fasts",
-                value: totalFasts,
-                color: theme.colors.text,
-              },
-              {
-                label: "Current Streak",
-                value: `${currentStreak}d`,
-                color:
-                  currentStreak > 0
-                    ? theme.colors.success
-                    : theme.colors.textMuted,
-              },
-              {
-                label: "Avg Duration",
-                value: `${avgDurationHours}h ${avgDurationMins}m`,
-                color: theme.colors.text,
-              },
-              {
-                label: "Longest Fast",
-                value: `${longestFastHours}h ${longestFastMins}m`,
-                color: theme.colors.accent,
-              },
-              {
-                label: "Completion",
-                value: `${completionRate}%`,
-                color:
-                  completionRate >= 80
-                    ? theme.colors.success
-                    : theme.colors.text,
-              },
-            ].map((stat, i) => (
+      {/* Tab Content with Transition */}
+      <div
+        style={{
+          opacity: isTabTransitioning ? 0 : 1,
+          transform: isTabTransitioning ? "translateY(10px)" : "translateY(0)",
+          transition: "opacity 0.15s ease, transform 0.15s ease",
+        }}
+      >
+        {/* OVERVIEW TAB */}
+        {activeTab === "overview" && (
+          <div>
+            {/* Key Metrics */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                gap: "12px",
+                marginBottom: "24px",
+              }}
+            >
+              {[
+                {
+                  label: "Total Hours",
+                  value: `${totalHours}h`,
+                  color: theme.colors.accent,
+                },
+                {
+                  label: "Total Fasts",
+                  value: totalFasts,
+                  color: theme.colors.text,
+                },
+                {
+                  label: "Current Streak",
+                  value: `${currentStreak}d`,
+                  color:
+                    currentStreak > 0
+                      ? theme.colors.success
+                      : theme.colors.textMuted,
+                },
+                {
+                  label: "Avg Duration",
+                  value: `${avgDurationHours}h ${avgDurationMins}m`,
+                  color: theme.colors.text,
+                },
+                {
+                  label: "Longest Fast",
+                  value: `${longestFastHours}h ${longestFastMins}m`,
+                  color: theme.colors.accent,
+                },
+                {
+                  label: "Completion",
+                  value: `${completionRate}%`,
+                  color:
+                    completionRate >= 80
+                      ? theme.colors.success
+                      : theme.colors.text,
+                },
+              ].map((stat, i) => (
+                <div
+                  key={i}
+                  style={{
+                    backgroundColor: theme.colors.bgCard,
+                    border: `1px solid ${theme.colors.border}`,
+                    padding: "20px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: theme.colors.textMuted,
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {stat.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: 600,
+                      color: stat.color,
+                    }}
+                  >
+                    {stat.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Consistency Score */}
+            <div
+              style={{
+                backgroundColor: theme.colors.bgCard,
+                border: `1px solid ${theme.colors.border}`,
+                padding: "24px",
+                marginBottom: "24px",
+              }}
+            >
               <div
-                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: theme.colors.textMuted,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Consistency Score
+                  </div>
+                  <div
+                    style={{ fontSize: "13px", color: theme.colors.textMuted }}
+                  >
+                    Based on frequency, streak, and completion
+                  </div>
+                </div>
+                <div
+                  style={{
+                    fontSize: "36px",
+                    fontWeight: 700,
+                    color:
+                      consistencyScore >= 70
+                        ? theme.colors.success
+                        : consistencyScore >= 40
+                        ? theme.colors.accent
+                        : theme.colors.textMuted,
+                  }}
+                >
+                  {consistencyScore}
+                </div>
+              </div>
+              <div
+                style={{
+                  height: "8px",
+                  backgroundColor: theme.colors.bg,
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${consistencyScore}%`,
+                    height: "100%",
+                    backgroundColor:
+                      consistencyScore >= 70
+                        ? theme.colors.success
+                        : consistencyScore >= 40
+                        ? theme.colors.accent
+                        : theme.colors.textMuted,
+                    transition: "width 0.5s ease",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Protocol Breakdown */}
+            {protocolBreakdown.length > 0 && (
+              <div
                 style={{
                   backgroundColor: theme.colors.bgCard,
                   border: `1px solid ${theme.colors.border}`,
-                  padding: "20px",
+                  padding: "24px",
                 }}
               >
                 <div
@@ -624,101 +754,434 @@ export default function Statistics({ fasts }: StatisticsProps) {
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     color: theme.colors.textMuted,
-                    marginBottom: "8px",
+                    marginBottom: "20px",
                   }}
                 >
-                  {stat.label}
+                  Protocol Breakdown
                 </div>
                 <div
                   style={{
-                    fontSize: "24px",
-                    fontWeight: 600,
-                    color: stat.color,
+                    display: "flex",
+                    gap: "24px",
+                    flexWrap: "wrap",
+                    alignItems: "center",
                   }}
                 >
-                  {stat.value}
+                  <div style={{ width: "120px", height: "120px" }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={protocolBreakdown}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={35}
+                          outerRadius={50}
+                          paddingAngle={2}
+                        >
+                          {protocolBreakdown.map((_, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div style={{ flex: 1, minWidth: "200px" }}>
+                    {protocolBreakdown.map((protocol, i) => (
+                      <div
+                        key={protocol.name}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "10px",
+                            height: "10px",
+                            borderRadius: "2px",
+                            backgroundColor: COLORS[i % COLORS.length],
+                          }}
+                        />
+                        <div
+                          style={{
+                            flex: 1,
+                            fontSize: "14px",
+                            color: theme.colors.text,
+                          }}
+                        >
+                          {protocol.name}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: theme.colors.text,
+                          }}
+                        >
+                          {protocol.percentage}%
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
+        )}
 
-          {/* Consistency Score */}
-          <div
-            style={{
-              backgroundColor: theme.colors.bgCard,
-              border: `1px solid ${theme.colors.border}`,
-              padding: "24px",
-              marginBottom: "24px",
-            }}
-          >
+        {/* TRENDS TAB */}
+        {activeTab === "trends" && (
+          <div>
+            {/* Daily Hours Chart */}
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "16px",
+                backgroundColor: theme.colors.bgCard,
+                border: `1px solid ${theme.colors.border}`,
+                padding: "24px",
+                marginBottom: "24px",
               }}
             >
-              <div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 500,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: theme.colors.textMuted,
-                    marginBottom: "4px",
-                  }}
-                >
-                  Consistency Score
-                </div>
-                <div
-                  style={{ fontSize: "13px", color: theme.colors.textMuted }}
-                >
-                  Based on frequency, streak, and completion
-                </div>
-              </div>
               <div
                 style={{
-                  fontSize: "36px",
-                  fontWeight: 700,
-                  color:
-                    consistencyScore >= 70
-                      ? theme.colors.success
-                      : consistencyScore >= 40
-                      ? theme.colors.accent
-                      : theme.colors.textMuted,
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: theme.colors.textMuted,
+                  marginBottom: "20px",
                 }}
               >
-                {consistencyScore}
+                Daily Fasting Hours
+              </div>
+              <div style={{ height: "250px" }}>
+                {dailyData.some((d) => d.hours > 0) ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={dailyData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={theme.colors.border}
+                      />
+                      <XAxis
+                        dataKey="date"
+                        stroke={theme.colors.textMuted}
+                        fontSize={11}
+                      />
+                      <YAxis stroke={theme.colors.textMuted} fontSize={11} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: theme.colors.bgCard,
+                          border: `1px solid ${theme.colors.border}`,
+                          color: theme.colors.text,
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="hours"
+                        stroke={theme.colors.accent}
+                        fill={theme.colors.accent}
+                        fillOpacity={0.2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div
+                    style={{
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: theme.colors.textMuted,
+                      fontSize: "13px",
+                    }}
+                  >
+                    No data for selected period
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Weekly Progress */}
             <div
               style={{
-                height: "8px",
-                backgroundColor: theme.colors.bg,
-                borderRadius: "4px",
-                overflow: "hidden",
+                backgroundColor: theme.colors.bgCard,
+                border: `1px solid ${theme.colors.border}`,
+                padding: "24px",
+                marginBottom: "24px",
               }}
             >
               <div
                 style={{
-                  width: `${consistencyScore}%`,
-                  height: "100%",
-                  backgroundColor:
-                    consistencyScore >= 70
-                      ? theme.colors.success
-                      : consistencyScore >= 40
-                      ? theme.colors.accent
-                      : theme.colors.textMuted,
-                  transition: "width 0.5s ease",
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: theme.colors.textMuted,
+                  marginBottom: "20px",
                 }}
-              />
+              >
+                Weekly Progress
+              </div>
+              <div style={{ height: "200px" }}>
+                {weeklyTrendData.some((d) => d.hours > 0) ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyTrendData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={theme.colors.border}
+                      />
+                      <XAxis
+                        dataKey="week"
+                        stroke={theme.colors.textMuted}
+                        fontSize={11}
+                      />
+                      <YAxis stroke={theme.colors.textMuted} fontSize={11} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: theme.colors.bgCard,
+                          border: `1px solid ${theme.colors.border}`,
+                          color: theme.colors.text,
+                        }}
+                      />
+                      <Bar
+                        dataKey="hours"
+                        fill={theme.colors.accent}
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div
+                    style={{
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: theme.colors.textMuted,
+                      fontSize: "13px",
+                    }}
+                  >
+                    No data for selected period
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Protocol Breakdown */}
-          {protocolBreakdown.length > 0 && (
+            {/* Calendar Heatmap */}
+            <CalendarHeatmap
+              fasts={fasts}
+              months={
+                dateRange === "all" || dateRange === "1y"
+                  ? 12
+                  : dateRange === "6m"
+                  ? 6
+                  : dateRange === "90d"
+                  ? 3
+                  : 2
+              }
+            />
+          </div>
+        )}
+
+        {/* PATTERNS TAB */}
+        {activeTab === "patterns" && (
+          <div>
+            {/* Day of Week */}
+            <div
+              style={{
+                backgroundColor: theme.colors.bgCard,
+                border: `1px solid ${theme.colors.border}`,
+                padding: "24px",
+                marginBottom: "24px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: theme.colors.textMuted,
+                  marginBottom: "20px",
+                }}
+              >
+                Fasting by Day of Week
+              </div>
+              <div style={{ height: "200px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dayOfWeekData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={theme.colors.border}
+                    />
+                    <XAxis
+                      dataKey="day"
+                      stroke={theme.colors.textMuted}
+                      fontSize={11}
+                    />
+                    <YAxis stroke={theme.colors.textMuted} fontSize={11} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: theme.colors.bgCard,
+                        border: `1px solid ${theme.colors.border}`,
+                        color: theme.colors.text,
+                      }}
+                      formatter={(value) => [`${value}h`, "Total Hours"]}
+                    />
+                    <Bar
+                      dataKey="hours"
+                      fill={theme.colors.accent}
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {bestDay.fasts > 0 && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "12px 16px",
+                    backgroundColor: theme.colors.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      backgroundColor: theme.colors.accent + "20",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={theme.colors.accent}
+                      strokeWidth="2"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: theme.colors.text,
+                      }}
+                    >
+                      Best Day: {bestDay.day}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: theme.colors.textMuted,
+                      }}
+                    >
+                      {bestDay.fasts} fasts, {bestDay.hours} total hours
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Time of Day */}
+            <div
+              style={{
+                backgroundColor: theme.colors.bgCard,
+                border: `1px solid ${theme.colors.border}`,
+                padding: "24px",
+                marginBottom: "24px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: theme.colors.textMuted,
+                  marginBottom: "20px",
+                }}
+              >
+                Preferred Start Time
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: "12px",
+                }}
+              >
+                {timeOfDayData.map((period) => {
+                  const isMax =
+                    period.fasts ===
+                      Math.max(...timeOfDayData.map((p) => p.fasts)) &&
+                    period.fasts > 0;
+                  return (
+                    <div
+                      key={period.name}
+                      style={{
+                        padding: "16px",
+                        backgroundColor: isMax
+                          ? theme.colors.accent + "10"
+                          : theme.colors.bg,
+                        border: `1px solid ${
+                          isMax ? theme.colors.accent : theme.colors.border
+                        }`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: theme.colors.text,
+                          marginBottom: "4px",
+                        }}
+                      >
+                        {period.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: theme.colors.textMuted,
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {period.range}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "20px",
+                          fontWeight: 600,
+                          color: isMax
+                            ? theme.colors.accent
+                            : theme.colors.text,
+                        }}
+                      >
+                        {period.fasts} fasts
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Frequency Stats */}
             <div
               style={{
                 backgroundColor: theme.colors.bgCard,
@@ -736,923 +1199,492 @@ export default function Statistics({ fasts }: StatisticsProps) {
                   marginBottom: "20px",
                 }}
               >
-                Protocol Breakdown
+                Fasting Frequency
               </div>
               <div
                 style={{
-                  display: "flex",
-                  gap: "24px",
-                  flexWrap: "wrap",
-                  alignItems: "center",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "16px",
+                  textAlign: "center",
                 }}
               >
-                <div style={{ width: "120px", height: "120px" }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={protocolBreakdown}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={35}
-                        outerRadius={50}
-                        paddingAngle={2}
-                      >
-                        {protocolBreakdown.map((_, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div style={{ flex: 1, minWidth: "200px" }}>
-                  {protocolBreakdown.map((protocol, i) => (
-                    <div
-                      key={protocol.name}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        marginBottom: "10px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "10px",
-                          height: "10px",
-                          borderRadius: "2px",
-                          backgroundColor: COLORS[i % COLORS.length],
-                        }}
-                      />
-                      <div
-                        style={{
-                          flex: 1,
-                          fontSize: "14px",
-                          color: theme.colors.text,
-                        }}
-                      >
-                        {protocol.name}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: theme.colors.text,
-                        }}
-                      >
-                        {protocol.percentage}%
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TRENDS TAB */}
-      {activeTab === "trends" && (
-        <div>
-          {/* Daily Hours Chart */}
-          <div
-            style={{
-              backgroundColor: theme.colors.bgCard,
-              border: `1px solid ${theme.colors.border}`,
-              padding: "24px",
-              marginBottom: "24px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: theme.colors.textMuted,
-                marginBottom: "20px",
-              }}
-            >
-              Daily Fasting Hours
-            </div>
-            <div style={{ height: "250px" }}>
-              {dailyData.some((d) => d.hours > 0) ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={dailyData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={theme.colors.border}
-                    />
-                    <XAxis
-                      dataKey="date"
-                      stroke={theme.colors.textMuted}
-                      fontSize={11}
-                    />
-                    <YAxis stroke={theme.colors.textMuted} fontSize={11} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: theme.colors.bgCard,
-                        border: `1px solid ${theme.colors.border}`,
-                        color: theme.colors.text,
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="hours"
-                      stroke={theme.colors.accent}
-                      fill={theme.colors.accent}
-                      fillOpacity={0.2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div
-                  style={{
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: theme.colors.textMuted,
-                    fontSize: "13px",
-                  }}
-                >
-                  No data for selected period
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Weekly Progress */}
-          <div
-            style={{
-              backgroundColor: theme.colors.bgCard,
-              border: `1px solid ${theme.colors.border}`,
-              padding: "24px",
-              marginBottom: "24px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: theme.colors.textMuted,
-                marginBottom: "20px",
-              }}
-            >
-              Weekly Progress
-            </div>
-            <div style={{ height: "200px" }}>
-              {weeklyTrendData.some((d) => d.hours > 0) ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weeklyTrendData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={theme.colors.border}
-                    />
-                    <XAxis
-                      dataKey="week"
-                      stroke={theme.colors.textMuted}
-                      fontSize={11}
-                    />
-                    <YAxis stroke={theme.colors.textMuted} fontSize={11} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: theme.colors.bgCard,
-                        border: `1px solid ${theme.colors.border}`,
-                        color: theme.colors.text,
-                      }}
-                    />
-                    <Bar
-                      dataKey="hours"
-                      fill={theme.colors.accent}
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div
-                  style={{
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: theme.colors.textMuted,
-                    fontSize: "13px",
-                  }}
-                >
-                  No data for selected period
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Calendar Heatmap */}
-          <CalendarHeatmap
-            fasts={fasts}
-            months={
-              dateRange === "all" || dateRange === "1y"
-                ? 12
-                : dateRange === "6m"
-                ? 6
-                : dateRange === "90d"
-                ? 3
-                : 2
-            }
-          />
-        </div>
-      )}
-
-      {/* PATTERNS TAB */}
-      {activeTab === "patterns" && (
-        <div>
-          {/* Day of Week */}
-          <div
-            style={{
-              backgroundColor: theme.colors.bgCard,
-              border: `1px solid ${theme.colors.border}`,
-              padding: "24px",
-              marginBottom: "24px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: theme.colors.textMuted,
-                marginBottom: "20px",
-              }}
-            >
-              Fasting by Day of Week
-            </div>
-            <div style={{ height: "200px" }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dayOfWeekData}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={theme.colors.border}
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke={theme.colors.textMuted}
-                    fontSize={11}
-                  />
-                  <YAxis stroke={theme.colors.textMuted} fontSize={11} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: theme.colors.bgCard,
-                      border: `1px solid ${theme.colors.border}`,
-                      color: theme.colors.text,
-                    }}
-                    formatter={(value) => [`${value}h`, "Total Hours"]}
-                  />
-                  <Bar
-                    dataKey="hours"
-                    fill={theme.colors.accent}
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {bestDay.fasts > 0 && (
-              <div
-                style={{
-                  marginTop: "16px",
-                  padding: "12px 16px",
-                  backgroundColor: theme.colors.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "50%",
-                    backgroundColor: theme.colors.accent + "20",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={theme.colors.accent}
-                    strokeWidth="2"
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                </div>
                 <div>
                   <div
                     style={{
-                      fontSize: "14px",
-                      fontWeight: 500,
+                      fontSize: "28px",
+                      fontWeight: 600,
                       color: theme.colors.text,
                     }}
                   >
-                    Best Day: {bestDay.day}
+                    {totalFasts > 0
+                      ? (
+                          totalFasts /
+                          ((DATE_RANGES.find((r) => r.id === dateRange)?.days ||
+                            30) /
+                            7)
+                        ).toFixed(1)
+                      : "0"}
                   </div>
                   <div
                     style={{ fontSize: "12px", color: theme.colors.textMuted }}
                   >
-                    {bestDay.fasts} fasts, {bestDay.hours} total hours
+                    Fasts/Week
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Time of Day */}
-          <div
-            style={{
-              backgroundColor: theme.colors.bgCard,
-              border: `1px solid ${theme.colors.border}`,
-              padding: "24px",
-              marginBottom: "24px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: theme.colors.textMuted,
-                marginBottom: "20px",
-              }}
-            >
-              Preferred Start Time
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "12px",
-              }}
-            >
-              {timeOfDayData.map((period) => {
-                const isMax =
-                  period.fasts ===
-                    Math.max(...timeOfDayData.map((p) => p.fasts)) &&
-                  period.fasts > 0;
-                return (
-                  <div
-                    key={period.name}
-                    style={{
-                      padding: "16px",
-                      backgroundColor: isMax
-                        ? theme.colors.accent + "10"
-                        : theme.colors.bg,
-                      border: `1px solid ${
-                        isMax ? theme.colors.accent : theme.colors.border
-                      }`,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: theme.colors.text,
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {period.name}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: theme.colors.textMuted,
-                        marginBottom: "8px",
-                      }}
-                    >
-                      {period.range}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "20px",
-                        fontWeight: 600,
-                        color: isMax ? theme.colors.accent : theme.colors.text,
-                      }}
-                    >
-                      {period.fasts} fasts
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Frequency Stats */}
-          <div
-            style={{
-              backgroundColor: theme.colors.bgCard,
-              border: `1px solid ${theme.colors.border}`,
-              padding: "24px",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: theme.colors.textMuted,
-                marginBottom: "20px",
-              }}
-            >
-              Fasting Frequency
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "16px",
-                textAlign: "center",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: "28px",
-                    fontWeight: 600,
-                    color: theme.colors.text,
-                  }}
-                >
-                  {totalFasts > 0
-                    ? (
-                        totalFasts /
-                        ((DATE_RANGES.find((r) => r.id === dateRange)?.days ||
-                          30) /
-                          7)
-                      ).toFixed(1)
-                    : "0"}
-                </div>
-                <div
-                  style={{ fontSize: "12px", color: theme.colors.textMuted }}
-                >
-                  Fasts/Week
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: "28px",
-                    fontWeight: 600,
-                    color: theme.colors.text,
-                  }}
-                >
-                  {totalFasts > 1
-                    ? `${Math.round(
-                        (DATE_RANGES.find((r) => r.id === dateRange)?.days ||
-                          30) / totalFasts
-                      )}d`
-                    : "—"}
-                </div>
-                <div
-                  style={{ fontSize: "12px", color: theme.colors.textMuted }}
-                >
-                  Avg Gap
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: "28px",
-                    fontWeight: 600,
-                    color: theme.colors.text,
-                  }}
-                >
-                  {
-                    new Set(
-                      filteredFasts.map((f) =>
-                        new Date(f.startTime).toDateString()
-                      )
-                    ).size
-                  }
-                </div>
-                <div
-                  style={{ fontSize: "12px", color: theme.colors.textMuted }}
-                >
-                  Days Active
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* BODY TAB */}
-      {activeTab === "body" && (
-        <div>
-          {canAccessFeature("weightTracking") ? (
-            <div
-              style={{
-                backgroundColor: theme.colors.bgCard,
-                border: `1px solid ${theme.colors.border}`,
-                padding: "24px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: "20px",
-                  flexWrap: "wrap",
-                  gap: "16px",
-                }}
-              >
                 <div>
                   <div
                     style={{
-                      fontSize: "11px",
-                      fontWeight: 500,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: theme.colors.textMuted,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Weight Progress
-                  </div>
-                  {filteredWeightEntries.length >= 2 && (
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        color: theme.colors.textMuted,
-                      }}
-                    >
-                      {startingWeight} → {currentWeightValue} {weightUnit} (
-                      <span
-                        style={{
-                          color:
-                            weightChange < 0
-                              ? theme.colors.success
-                              : theme.colors.text,
-                        }}
-                      >
-                        {weightChange > 0 ? "+" : ""}
-                        {weightChange.toFixed(1)}
-                      </span>
-                      )
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <input
-                    type="number"
-                    value={newWeight}
-                    onChange={(e) => setNewWeight(e.target.value)}
-                    placeholder="Weight"
-                    style={{
-                      width: "80px",
-                      backgroundColor: theme.colors.bg,
-                      border: `1px solid ${theme.colors.border}`,
-                      padding: "10px 12px",
-                      color: theme.colors.text,
-                      fontSize: "14px",
-                    }}
-                  />
-                  <select
-                    value={weightUnit}
-                    onChange={(e) =>
-                      setWeightUnit(e.target.value as "kg" | "lbs")
-                    }
-                    style={{
-                      backgroundColor: theme.colors.bg,
-                      border: `1px solid ${theme.colors.border}`,
-                      padding: "10px 12px",
-                      color: theme.colors.text,
-                      fontSize: "14px",
-                    }}
-                  >
-                    <option value="kg">kg</option>
-                    <option value="lbs">lbs</option>
-                  </select>
-                  <button
-                    onClick={addWeightEntry}
-                    style={{
-                      padding: "10px 16px",
-                      backgroundColor: theme.colors.accent,
-                      border: "none",
-                      color: accentTextColor,
-                      fontSize: "13px",
+                      fontSize: "28px",
                       fontWeight: 600,
-                      cursor: "pointer",
+                      color: theme.colors.text,
                     }}
                   >
-                    Log
-                  </button>
+                    {totalFasts > 1
+                      ? `${Math.round(
+                          (DATE_RANGES.find((r) => r.id === dateRange)?.days ||
+                            30) / totalFasts
+                        )}d`
+                      : "—"}
+                  </div>
+                  <div
+                    style={{ fontSize: "12px", color: theme.colors.textMuted }}
+                  >
+                    Avg Gap
+                  </div>
                 </div>
-              </div>
-              <div style={{ height: "250px" }}>
-                {weightData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={weightData}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={theme.colors.border}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        stroke={theme.colors.textMuted}
-                        fontSize={11}
-                      />
-                      <YAxis
-                        stroke={theme.colors.textMuted}
-                        fontSize={11}
-                        domain={["dataMin - 2", "dataMax + 2"]}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: theme.colors.bgCard,
-                          border: `1px solid ${theme.colors.border}`,
-                          color: theme.colors.text,
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="weight"
-                        stroke={theme.colors.accent}
-                        strokeWidth={2}
-                        dot={{
-                          fill: theme.colors.accent,
-                          strokeWidth: 0,
-                          r: 4,
-                        }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
+                <div>
                   <div
                     style={{
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: theme.colors.textMuted,
-                      fontSize: "13px",
+                      fontSize: "28px",
+                      fontWeight: 600,
+                      color: theme.colors.text,
                     }}
                   >
-                    Log your first weight to see progress
+                    {
+                      new Set(
+                        filteredFasts.map((f) =>
+                          new Date(f.startTime).toDateString()
+                        )
+                      ).size
+                    }
                   </div>
-                )}
+                  <div
+                    style={{ fontSize: "12px", color: theme.colors.textMuted }}
+                  >
+                    Days Active
+                  </div>
+                </div>
               </div>
             </div>
-          ) : (
-            <div
-              style={{
-                backgroundColor: theme.colors.bgCard,
-                border: `1px solid ${theme.colors.border}`,
-                padding: "60px 40px",
-                textAlign: "center",
-              }}
-            >
+          </div>
+        )}
+
+        {/* BODY TAB */}
+        {activeTab === "body" && (
+          <div>
+            {canAccessFeature("weightTracking") ? (
               <div
                 style={{
-                  width: "64px",
-                  height: "64px",
-                  borderRadius: "50%",
-                  backgroundColor: theme.colors.bg,
+                  backgroundColor: theme.colors.bgCard,
                   border: `1px solid ${theme.colors.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 20px",
+                  padding: "24px",
                 }}
               >
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={theme.colors.textMuted}
-                  strokeWidth="2"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              </div>
-              <h3
-                style={{
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color: theme.colors.text,
-                  marginBottom: "8px",
-                }}
-              >
-                Body Tracking is a Pro Feature
-              </h3>
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: theme.colors.textMuted,
-                  marginBottom: "24px",
-                  maxWidth: "300px",
-                  margin: "0 auto 24px",
-                  lineHeight: 1.5,
-                }}
-              >
-                Track your weight over time and see how fasting affects your
-                body.
-              </p>
-              <button
-                onClick={() => promptUpgrade("weightTracking")}
-                style={{
-                  padding: "14px 28px",
-                  backgroundColor: theme.colors.text,
-                  border: "none",
-                  color: theme.colors.bg,
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Upgrade to Pro
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* INSIGHTS TAB */}
-      {activeTab === "insights" && (
-        <div>
-          {insights.length > 0 ? (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-            >
-              {insights.map((insight, i) => (
                 <div
-                  key={i}
                   style={{
-                    backgroundColor: theme.colors.bgCard,
-                    border: `1px solid ${
-                      insight.type === "positive"
-                        ? theme.colors.success + "50"
-                        : insight.type === "suggestion"
-                        ? "#F59E0B50"
-                        : theme.colors.border
-                    }`,
-                    padding: "20px",
                     display: "flex",
-                    gap: "16px",
+                    justifyContent: "space-between",
                     alignItems: "flex-start",
+                    marginBottom: "20px",
+                    flexWrap: "wrap",
+                    gap: "16px",
                   }}
                 >
-                  <div
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      backgroundColor:
-                        insight.type === "positive"
-                          ? theme.colors.success + "20"
-                          : insight.type === "suggestion"
-                          ? "#F59E0B20"
-                          : theme.colors.bg,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {insight.type === "positive" ? (
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={theme.colors.success}
-                        strokeWidth="2"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : insight.type === "suggestion" ? (
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#F59E0B"
-                        strokeWidth="2"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke={theme.colors.textMuted}
-                        strokeWidth="2"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
-                    )}
-                  </div>
                   <div>
                     <div
                       style={{
-                        fontSize: "15px",
-                        fontWeight: 600,
-                        color: theme.colors.text,
+                        fontSize: "11px",
+                        fontWeight: 500,
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                        color: theme.colors.textMuted,
                         marginBottom: "4px",
                       }}
                     >
-                      {insight.title}
+                      Weight Progress
                     </div>
-                    <div
+                    {filteredWeightEntries.length >= 2 && (
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: theme.colors.textMuted,
+                        }}
+                      >
+                        {startingWeight} → {currentWeightValue} {weightUnit} (
+                        <span
+                          style={{
+                            color:
+                              weightChange < 0
+                                ? theme.colors.success
+                                : theme.colors.text,
+                          }}
+                        >
+                          {weightChange > 0 ? "+" : ""}
+                          {weightChange.toFixed(1)}
+                        </span>
+                        )
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <input
+                      type="number"
+                      value={newWeight}
+                      onChange={(e) => setNewWeight(e.target.value)}
+                      placeholder="Weight"
                       style={{
-                        fontSize: "13px",
-                        color: theme.colors.textMuted,
-                        lineHeight: 1.5,
+                        width: "80px",
+                        backgroundColor: theme.colors.bg,
+                        border: `1px solid ${theme.colors.border}`,
+                        padding: "10px 12px",
+                        color: theme.colors.text,
+                        fontSize: "14px",
+                      }}
+                    />
+                    <select
+                      value={weightUnit}
+                      onChange={(e) =>
+                        setWeightUnit(e.target.value as "kg" | "lbs")
+                      }
+                      style={{
+                        backgroundColor: theme.colors.bg,
+                        border: `1px solid ${theme.colors.border}`,
+                        padding: "10px 12px",
+                        color: theme.colors.text,
+                        fontSize: "14px",
                       }}
                     >
-                      {insight.description}
-                    </div>
+                      <option value="kg">kg</option>
+                      <option value="lbs">lbs</option>
+                    </select>
+                    <button
+                      onClick={addWeightEntry}
+                      style={{
+                        padding: "10px 16px",
+                        backgroundColor: theme.colors.accent,
+                        border: "none",
+                        color: accentTextColor,
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Log
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div
-              style={{
-                backgroundColor: theme.colors.bgCard,
-                border: `1px solid ${theme.colors.border}`,
-                padding: "60px 40px",
-                textAlign: "center",
-              }}
-            >
+                <div style={{ height: "250px" }}>
+                  {weightData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={weightData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke={theme.colors.border}
+                        />
+                        <XAxis
+                          dataKey="date"
+                          stroke={theme.colors.textMuted}
+                          fontSize={11}
+                        />
+                        <YAxis
+                          stroke={theme.colors.textMuted}
+                          fontSize={11}
+                          domain={["dataMin - 2", "dataMax + 2"]}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: theme.colors.bgCard,
+                            border: `1px solid ${theme.colors.border}`,
+                            color: theme.colors.text,
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="weight"
+                          stroke={theme.colors.accent}
+                          strokeWidth={2}
+                          dot={{
+                            fill: theme.colors.accent,
+                            strokeWidth: 0,
+                            r: 4,
+                          }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div
+                      style={{
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: theme.colors.textMuted,
+                        fontSize: "13px",
+                      }}
+                    >
+                      Log your first weight to see progress
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
               <div
                 style={{
-                  width: "64px",
-                  height: "64px",
-                  borderRadius: "50%",
-                  backgroundColor: theme.colors.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 20px",
+                  backgroundColor: theme.colors.bgCard,
+                  border: `1px solid ${theme.colors.border}`,
+                  padding: "60px 40px",
+                  textAlign: "center",
                 }}
               >
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={theme.colors.textMuted}
-                  strokeWidth="2"
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "50%",
+                    backgroundColor: theme.colors.bg,
+                    border: `1px solid ${theme.colors.border}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 20px",
+                  }}
                 >
-                  <line x1="9" y1="18" x2="15" y2="18" />
-                  <line x1="10" y1="22" x2="14" y2="22" />
-                  <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
-                </svg>
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={theme.colors.textMuted}
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </div>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    color: theme.colors.text,
+                    marginBottom: "8px",
+                  }}
+                >
+                  Body Tracking is a Pro Feature
+                </h3>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: theme.colors.textMuted,
+                    marginBottom: "24px",
+                    maxWidth: "300px",
+                    margin: "0 auto 24px",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Track your weight over time and see how fasting affects your
+                  body.
+                </p>
+                <button
+                  onClick={() => promptUpgrade("weightTracking")}
+                  style={{
+                    padding: "14px 28px",
+                    backgroundColor: theme.colors.text,
+                    border: "none",
+                    color: theme.colors.bg,
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Upgrade to Pro
+                </button>
               </div>
-              <h3
+            )}
+          </div>
+        )}
+
+        {/* INSIGHTS TAB */}
+        {activeTab === "insights" && (
+          <div>
+            {insights.length > 0 ? (
+              <div
                 style={{
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color: theme.colors.text,
-                  marginBottom: "8px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
                 }}
               >
-                No Insights Yet
-              </h3>
-              <p
+                {insights.map((insight, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      backgroundColor: theme.colors.bgCard,
+                      border: `1px solid ${
+                        insight.type === "positive"
+                          ? theme.colors.success + "50"
+                          : insight.type === "suggestion"
+                          ? "#F59E0B50"
+                          : theme.colors.border
+                      }`,
+                      padding: "20px",
+                      display: "flex",
+                      gap: "16px",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        borderRadius: "50%",
+                        backgroundColor:
+                          insight.type === "positive"
+                            ? theme.colors.success + "20"
+                            : insight.type === "suggestion"
+                            ? "#F59E0B20"
+                            : theme.colors.bg,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {insight.type === "positive" ? (
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke={theme.colors.success}
+                          strokeWidth="2"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : insight.type === "suggestion" ? (
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#F59E0B"
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="12" />
+                          <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke={theme.colors.textMuted}
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          color: theme.colors.text,
+                          marginBottom: "4px",
+                        }}
+                      >
+                        {insight.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          color: theme.colors.textMuted,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {insight.description}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
                 style={{
-                  fontSize: "14px",
-                  color: theme.colors.textMuted,
-                  maxWidth: "300px",
-                  margin: "0 auto",
-                  lineHeight: 1.5,
+                  backgroundColor: theme.colors.bgCard,
+                  border: `1px solid ${theme.colors.border}`,
+                  padding: "60px 40px",
+                  textAlign: "center",
                 }}
               >
-                Complete more fasts to unlock personalized insights about your
-                fasting patterns.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "50%",
+                    backgroundColor: theme.colors.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 20px",
+                  }}
+                >
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={theme.colors.textMuted}
+                    strokeWidth="2"
+                  >
+                    <line x1="9" y1="18" x2="15" y2="18" />
+                    <line x1="10" y1="22" x2="14" y2="22" />
+                    <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
+                  </svg>
+                </div>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    color: theme.colors.text,
+                    marginBottom: "8px",
+                  }}
+                >
+                  No Insights Yet
+                </h3>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: theme.colors.textMuted,
+                    maxWidth: "300px",
+                    margin: "0 auto",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Complete more fasts to unlock personalized insights about your
+                  fasting patterns.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      {/* End of transition wrapper */}
     </div>
   );
 }

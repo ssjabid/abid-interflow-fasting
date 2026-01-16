@@ -48,6 +48,7 @@ function App() {
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [signupModalVisible, setSignupModalVisible] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState<{
     show: boolean;
     plan: string;
@@ -89,6 +90,17 @@ function App() {
       setShowLogin(true);
       setTimeout(() => setLoginModalVisible(true), 10);
     }, 200);
+  };
+
+  // Logout modal animation handlers
+  const openLogoutModal = () => {
+    setShowLogoutConfirm(true);
+    setTimeout(() => setLogoutModalVisible(true), 10);
+  };
+
+  const closeLogoutModal = () => {
+    setLogoutModalVisible(false);
+    setTimeout(() => setShowLogoutConfirm(false), 300);
   };
 
   // Handle view change with transition
@@ -406,7 +418,7 @@ function App() {
                   </div>
 
                   <button
-                    onClick={() => setShowLogoutConfirm(true)}
+                    onClick={openLogoutModal}
                     style={{
                       padding: "10px 24px",
                       backgroundColor: "transparent",
@@ -533,15 +545,18 @@ function App() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.85)",
-            backdropFilter: "blur(8px)",
+            backgroundColor: logoutModalVisible
+              ? "rgba(0, 0, 0, 0.85)"
+              : "rgba(0, 0, 0, 0)",
+            backdropFilter: logoutModalVisible ? "blur(8px)" : "blur(0px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             zIndex: 1000,
             padding: "24px",
+            transition: "background-color 0.3s ease, backdrop-filter 0.3s ease",
           }}
-          onClick={() => setShowLogoutConfirm(false)}
+          onClick={closeLogoutModal}
         >
           <div
             style={{
@@ -551,6 +566,11 @@ function App() {
               maxWidth: "360px",
               width: "100%",
               textAlign: "center",
+              opacity: logoutModalVisible ? 1 : 0,
+              transform: logoutModalVisible
+                ? "scale(1) translateY(0)"
+                : "scale(0.95) translateY(10px)",
+              transition: "opacity 0.3s ease, transform 0.3s ease",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -564,6 +584,9 @@ function App() {
                 alignItems: "center",
                 justifyContent: "center",
                 margin: "0 auto 20px",
+                opacity: logoutModalVisible ? 1 : 0,
+                transform: logoutModalVisible ? "scale(1)" : "scale(0.8)",
+                transition: "opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s",
               }}
             >
               <svg
@@ -586,6 +609,12 @@ function App() {
                 fontWeight: 600,
                 color: theme.colors.text,
                 marginBottom: "8px",
+                opacity: logoutModalVisible ? 1 : 0,
+                transform: logoutModalVisible
+                  ? "translateY(0)"
+                  : "translateY(10px)",
+                transition:
+                  "opacity 0.3s ease 0.15s, transform 0.3s ease 0.15s",
               }}
             >
               Log out?
@@ -597,14 +626,30 @@ function App() {
                 color: theme.colors.textMuted,
                 marginBottom: "24px",
                 lineHeight: 1.5,
+                opacity: logoutModalVisible ? 1 : 0,
+                transform: logoutModalVisible
+                  ? "translateY(0)"
+                  : "translateY(10px)",
+                transition: "opacity 0.3s ease 0.2s, transform 0.3s ease 0.2s",
               }}
             >
               Are you sure you want to log out of your account?
             </p>
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                opacity: logoutModalVisible ? 1 : 0,
+                transform: logoutModalVisible
+                  ? "translateY(0)"
+                  : "translateY(10px)",
+                transition:
+                  "opacity 0.3s ease 0.25s, transform 0.3s ease 0.25s",
+              }}
+            >
               <button
-                onClick={() => setShowLogoutConfirm(false)}
+                onClick={closeLogoutModal}
                 style={{
                   flex: 1,
                   padding: "12px",
@@ -614,7 +659,8 @@ function App() {
                   fontSize: "14px",
                   fontWeight: 500,
                   cursor: "pointer",
-                  transition: "all 0.2s ease",
+                  transition:
+                    "background-color 0.2s ease, border-color 0.2s ease",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = theme.colors.bgHover;
@@ -627,8 +673,8 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  setShowLogoutConfirm(false);
-                  handleLogout();
+                  closeLogoutModal();
+                  setTimeout(() => handleLogout(), 300);
                 }}
                 style={{
                   flex: 1,
@@ -639,7 +685,13 @@ function App() {
                   fontSize: "14px",
                   fontWeight: 600,
                   cursor: "pointer",
-                  transition: "all 0.2s ease",
+                  transition: "opacity 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = "0.9";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = "1";
                 }}
               >
                 Log out
