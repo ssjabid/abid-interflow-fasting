@@ -13,20 +13,84 @@ interface EditFastModalProps {
 }
 
 const MOOD_LEVELS = [
-  { value: 1, label: "Struggling", emoji: "😫" },
-  { value: 2, label: "Difficult", emoji: "😕" },
-  { value: 3, label: "Neutral", emoji: "😐" },
-  { value: 4, label: "Good", emoji: "🙂" },
-  { value: 5, label: "Great", emoji: "😄" },
+  { value: 1, label: "Struggling" },
+  { value: 2, label: "Difficult" },
+  { value: 3, label: "Neutral" },
+  { value: 4, label: "Good" },
+  { value: 5, label: "Great" },
 ];
 
 const ENERGY_LEVELS = [
-  { value: 1, label: "Very Low", emoji: "🔋" },
-  { value: 2, label: "Low", emoji: "🪫" },
-  { value: 3, label: "Moderate", emoji: "⚡" },
-  { value: 4, label: "High", emoji: "⚡⚡" },
-  { value: 5, label: "Energized", emoji: "🚀" },
+  { value: 1, label: "Very Low" },
+  { value: 2, label: "Low" },
+  { value: 3, label: "Moderate" },
+  { value: 4, label: "High" },
+  { value: 5, label: "Energized" },
 ];
+
+// Mood icon component - face expressions
+const MoodIcon = ({ value, color }: { value: number; color: string }) => {
+  const mouthPaths: Record<number, string> = {
+    1: "M8 16 Q12 12 16 16", // Deep frown
+    2: "M8 15 Q12 13 16 15", // Slight frown
+    3: "M8 14 L16 14", // Neutral line
+    4: "M8 13 Q12 16 16 13", // Smile
+    5: "M8 12 Q12 17 16 12", // Big smile
+  };
+
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.5"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="8" cy="9" r="1" fill={color} />
+      <circle cx="16" cy="9" r="1" fill={color} />
+      <path d={mouthPaths[value]} strokeLinecap="round" />
+    </svg>
+  );
+};
+
+// Energy icon component - battery/lightning styles
+const EnergyIcon = ({ value, color }: { value: number; color: string }) => {
+  // Different fill levels for battery
+  const fillHeight = value * 3;
+  const fillY = 17 - fillHeight;
+
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.5"
+    >
+      <rect x="6" y="4" width="12" height="16" rx="2" />
+      <rect x="9" y="1" width="6" height="3" rx="1" />
+      <rect
+        x="8"
+        y={fillY}
+        width="8"
+        height={fillHeight}
+        fill={color}
+        opacity="0.6"
+      />
+      {value >= 4 && (
+        <path
+          d="M12 8 L10 12 L14 12 L12 16"
+          stroke={color}
+          strokeWidth="1.5"
+          fill="none"
+        />
+      )}
+    </svg>
+  );
+};
 
 export default function EditFastModal({
   fast,
@@ -53,7 +117,7 @@ export default function EditFastModal({
 
   const handleSave = async () => {
     setIsSaving(true);
-    await onSave(fast.UserId, {
+    await onSave((fast as any).id, {
       mood,
       energyLevel,
       notes: notes.trim() || undefined,
@@ -71,7 +135,8 @@ export default function EditFastModal({
   };
 
   const formatDate = (date: Date | string) => {
-    return new Date(date).toLocaleDateString("en-US", {
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -177,26 +242,30 @@ export default function EditFastModal({
                   minWidth: "70px",
                   padding: "12px 8px",
                   backgroundColor:
-                    mood === level.value
-                      ? theme.colors.accent
-                      : theme.colors.bg,
+                    mood === level.value ? theme.colors.text : theme.colors.bg,
                   border: `1px solid ${
                     mood === level.value
-                      ? theme.colors.accent
+                      ? theme.colors.text
                       : theme.colors.border
                   }`,
-                  color: mood === level.value ? "#FFFFFF" : theme.colors.text,
-                  fontSize: "12px",
+                  color:
+                    mood === level.value ? theme.colors.bg : theme.colors.text,
+                  fontSize: "11px",
                   fontWeight: 500,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: "4px",
+                  gap: "6px",
                 }}
               >
-                <span style={{ fontSize: "18px" }}>{level.emoji}</span>
+                <MoodIcon
+                  value={level.value}
+                  color={
+                    mood === level.value ? theme.colors.bg : theme.colors.text
+                  }
+                />
                 {level.label}
               </button>
             ))}
@@ -233,26 +302,35 @@ export default function EditFastModal({
                   padding: "12px 8px",
                   backgroundColor:
                     energyLevel === level.value
-                      ? theme.colors.accent
+                      ? theme.colors.text
                       : theme.colors.bg,
                   border: `1px solid ${
                     energyLevel === level.value
-                      ? theme.colors.accent
+                      ? theme.colors.text
                       : theme.colors.border
                   }`,
                   color:
-                    energyLevel === level.value ? "#FFFFFF" : theme.colors.text,
-                  fontSize: "12px",
+                    energyLevel === level.value
+                      ? theme.colors.bg
+                      : theme.colors.text,
+                  fontSize: "11px",
                   fontWeight: 500,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: "4px",
+                  gap: "6px",
                 }}
               >
-                <span style={{ fontSize: "14px" }}>{level.emoji}</span>
+                <EnergyIcon
+                  value={level.value}
+                  color={
+                    energyLevel === level.value
+                      ? theme.colors.bg
+                      : theme.colors.text
+                  }
+                />
                 {level.label}
               </button>
             ))}

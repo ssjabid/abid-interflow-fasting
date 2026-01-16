@@ -6,14 +6,19 @@ import type {
   AchievementTier,
 } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
+import { useSubscription } from "../../context/SubscriptionContext";
 import AchievementIcon from "../ui/AchievementIcon";
 
 interface GoalsProps {
   userId: string;
 }
 
+// Protocols that are free for all users
+const FREE_PROTOCOLS = ["16:8", "14:10"];
+
 export default function Goals({ userId }: GoalsProps) {
   const { theme } = useTheme();
+  const { canAccessFeature, promptUpgrade } = useSubscription();
   const accentTextColor =
     theme.mode === "light"
       ? theme.accent === "default"
@@ -69,7 +74,23 @@ export default function Goals({ userId }: GoalsProps) {
 
   const selectProtocol = (protocolId: string) => {
     const protocol = PROTOCOLS.find((p) => p.id === protocolId);
-    if (protocol && protocol.id !== "custom") {
+    if (!protocol) return;
+
+    // Check if this protocol requires Pro (not in free list and not custom)
+    const requiresPro =
+      !FREE_PROTOCOLS.includes(protocolId) && protocolId !== "custom";
+    if (requiresPro && !canAccessFeature("allProtocols")) {
+      promptUpgrade("allProtocols");
+      return;
+    }
+
+    if (protocol.id === "custom") {
+      // For custom, just set the protocol and let user adjust goals manually
+      setTempProfile({
+        ...tempProfile,
+        preferredProtocol: protocolId,
+      });
+    } else {
       setTempProfile({
         ...tempProfile,
         preferredProtocol: protocolId,
@@ -231,8 +252,12 @@ export default function Goals({ userId }: GoalsProps) {
                       gap: "8px",
                     }}
                   >
-                    {PROTOCOLS.filter((p) => p.id !== "custom").map(
-                      (protocol) => (
+                    {PROTOCOLS.map((protocol) => {
+                      const isLocked =
+                        !FREE_PROTOCOLS.includes(protocol.id) &&
+                        protocol.id !== "custom" &&
+                        !canAccessFeature("allProtocols");
+                      return (
                         <button
                           key={protocol.id}
                           onClick={() => selectProtocol(protocol.id)}
@@ -250,16 +275,65 @@ export default function Goals({ userId }: GoalsProps) {
                             color: theme.colors.text,
                             cursor: "pointer",
                             textAlign: "left",
+                            position: "relative",
+                            opacity: isLocked ? 0.7 : 1,
                           }}
                         >
+                          {isLocked && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: "8px",
+                                right: "8px",
+                              }}
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke={theme.colors.textMuted}
+                                strokeWidth="2"
+                              >
+                                <rect
+                                  x="3"
+                                  y="11"
+                                  width="18"
+                                  height="11"
+                                  rx="2"
+                                  ry="2"
+                                />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                              </svg>
+                            </div>
+                          )}
                           <div
                             style={{
                               fontSize: "16px",
                               fontWeight: 600,
                               marginBottom: "4px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
                             }}
                           >
                             {protocol.name}
+                            {isLocked && (
+                              <span
+                                style={{
+                                  fontSize: "9px",
+                                  fontWeight: 500,
+                                  color: theme.colors.textMuted,
+                                  backgroundColor: theme.colors.bgHover,
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.05em",
+                                }}
+                              >
+                                Pro
+                              </span>
+                            )}
                           </div>
                           <div
                             style={{
@@ -267,12 +341,13 @@ export default function Goals({ userId }: GoalsProps) {
                               color: theme.colors.textMuted,
                             }}
                           >
-                            {protocol.fastingHours}h fast /{" "}
-                            {protocol.eatingHours}h eat
+                            {protocol.id === "custom"
+                              ? "Set your own fasting hours"
+                              : `${protocol.fastingHours}h fast / ${protocol.eatingHours}h eat`}
                           </div>
                         </button>
-                      )
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
 
