@@ -158,7 +158,7 @@ export default function LandingPage({
     },
     {
       name: "Pro",
-      price: "£7",
+      price: "£5",
       period: "month",
       features: [
         "Unlimited history",
@@ -173,7 +173,7 @@ export default function LandingPage({
     },
     {
       name: "Infinite Pro",
-      price: "£99",
+      price: "£60",
       period: "one-time",
       features: [
         "Everything in Pro",

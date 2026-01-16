@@ -22,26 +22,16 @@ interface UpgradeModalProps {
 export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
   const { theme } = useTheme();
   const { currentUser } = useAuth();
-  const { startTrial, activateKey, subscription } = useSubscription();
+  const { activateKey } = useSubscription();
   const [activationKey, setActivationKey] = useState("");
   const [keyError, setKeyError] = useState("");
   const [keySuccess, setKeySuccess] = useState("");
   const [isActivating, setIsActivating] = useState(false);
   const [isLoading, setIsLoading] = useState<PlanType | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
 
   const stripeEnabled = isStripeConfigured();
   const pricing = getPricingInfo();
-
-  const handleStartTrial = async () => {
-    const success = await startTrial();
-    if (success) {
-      onClose();
-    } else {
-      alert(
-        "You've already used your free trial. Please upgrade to Pro to continue."
-      );
-    }
-  };
 
   const handleActivateKey = async () => {
     if (!activationKey.trim()) {
@@ -58,11 +48,12 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
     if (result.success) {
       setKeySuccess(
         `Successfully activated ${
-          result.tier === "infinite" ? "Infinite" : "Pro"
+          result.tier === "infinite" ? "Infinite Pro" : "Pro"
         }!`
       );
       setTimeout(() => {
         onClose();
+        window.location.reload();
       }, 1500);
     } else {
       setKeyError(result.error || "Invalid activation key");
@@ -73,18 +64,22 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
 
   const handleStripeCheckout = async (plan: PlanType) => {
     if (!currentUser?.uid || !currentUser?.email) {
-      alert("Please make sure you're logged in with an email address.");
+      setCheckoutError(
+        "Please make sure you're logged in with an email address."
+      );
       return;
     }
 
     if (!stripeEnabled) {
-      alert(
-        "Payment system is being set up. Please use an activation key for now."
+      setCheckoutError(
+        "Payment system is being configured. Please try again later or use an activation key."
       );
       return;
     }
 
     setIsLoading(plan);
+    setCheckoutError("");
+
     try {
       await redirectToCheckout(currentUser.uid, currentUser.email, plan);
     } catch (error: unknown) {
@@ -93,7 +88,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
         error instanceof Error
           ? error.message
           : "Failed to start checkout. Please try again.";
-      alert(errorMessage);
+      setCheckoutError(errorMessage);
       setIsLoading(null);
     }
   };
@@ -106,7 +101,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
     "All fasting protocols",
     "Custom fasts",
     "Advanced analytics",
-    "Data export (CSV, PDF, JSON)",
+    "Data export (CSV, JSON)",
     "Leaderboard access",
     "Weight & mood tracking",
     "Priority support",
@@ -158,7 +153,6 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
             position: "relative",
           }}
         >
-          {/* Close button */}
           <button
             onClick={onClose}
             style={{
@@ -177,7 +171,6 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
             ×
           </button>
 
-          {/* Star icon */}
           <div
             style={{
               width: "56px",
@@ -229,6 +222,23 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
           )}
         </div>
 
+        {/* Error Message */}
+        {checkoutError && (
+          <div
+            style={{
+              margin: "16px 24px 0",
+              padding: "12px 16px",
+              backgroundColor: "#EF444420",
+              border: "1px solid #EF4444",
+              color: "#EF4444",
+              fontSize: "13px",
+              borderRadius: "4px",
+            }}
+          >
+            {checkoutError}
+          </div>
+        )}
+
         {/* Activation Key Section */}
         <div
           style={{
@@ -279,12 +289,12 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
               onClick={handleActivateKey}
               disabled={isActivating}
               style={{
-                padding: "12px 20px",
-                backgroundColor: theme.colors.text,
-                border: "none",
-                color: theme.colors.bg,
-                fontSize: "13px",
-                fontWeight: 600,
+                padding: "12px 24px",
+                backgroundColor: theme.colors.bgHover,
+                border: `1px solid ${theme.colors.border}`,
+                color: theme.colors.text,
+                fontSize: "14px",
+                fontWeight: 500,
                 cursor: isActivating ? "not-allowed" : "pointer",
                 opacity: isActivating ? 0.7 : 1,
               }}
@@ -293,57 +303,35 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
             </button>
           </div>
           {keyError && (
-            <div
-              style={{ color: "#EF4444", fontSize: "12px", marginTop: "8px" }}
-            >
+            <p style={{ color: "#EF4444", fontSize: "12px", marginTop: "8px" }}>
               {keyError}
-            </div>
+            </p>
           )}
           {keySuccess && (
-            <div
-              style={{ color: "#10B981", fontSize: "12px", marginTop: "8px" }}
-            >
+            <p style={{ color: "#10B981", fontSize: "12px", marginTop: "8px" }}>
               {keySuccess}
-            </div>
+            </p>
           )}
         </div>
 
-        {/* Pricing cards */}
+        {/* Plans */}
         <div
           style={{
             padding: "24px",
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gridTemplateColumns: "1fr 1fr",
             gap: "16px",
           }}
         >
-          {/* Pro Monthly Plan */}
+          {/* Pro Plan */}
           <div
             style={{
               backgroundColor: theme.colors.bg,
-              border: `2px solid ${theme.colors.text}`,
+              border: `1px solid ${theme.colors.border}`,
               padding: "24px",
               position: "relative",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                top: "-12px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                backgroundColor: theme.colors.text,
-                color: theme.colors.bg,
-                fontSize: "11px",
-                fontWeight: 600,
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                padding: "4px 12px",
-              }}
-            >
-              Most Popular
-            </div>
-
             <div
               style={{
                 fontSize: "18px",
@@ -404,64 +392,31 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
               ))}
             </ul>
 
-            {!subscription?.trialUsed ? (
-              <button
-                onClick={handleStartTrial}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  backgroundColor: theme.colors.text,
-                  border: "none",
-                  color: theme.colors.bg,
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                Start Free Trial
-              </button>
-            ) : (
-              <button
-                onClick={() => handleStripeCheckout("pro_monthly")}
-                disabled={isLoading !== null}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  backgroundColor: theme.colors.text,
-                  border: "none",
-                  color: theme.colors.bg,
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: isLoading !== null ? "not-allowed" : "pointer",
-                  opacity: isLoading !== null ? 0.7 : 1,
-                  transition: "all 0.2s ease",
-                }}
-              >
-                {isLoading === "pro_monthly" ? "Loading..." : "Subscribe Now"}
-              </button>
-            )}
-
-            {!subscription?.trialUsed && (
-              <p
-                style={{
-                  fontSize: "11px",
-                  color: theme.colors.textMuted,
-                  textAlign: "center",
-                  marginTop: "8px",
-                }}
-              >
-                1 month free, then {pricing.pro_monthly.price}
-                {pricing.pro_monthly.period}
-              </p>
-            )}
+            <button
+              onClick={() => handleStripeCheckout("pro_monthly")}
+              disabled={isLoading !== null}
+              style={{
+                width: "100%",
+                padding: "14px",
+                backgroundColor: theme.colors.text,
+                border: "none",
+                color: theme.colors.bg,
+                fontSize: "14px",
+                fontWeight: 600,
+                cursor: isLoading !== null ? "not-allowed" : "pointer",
+                opacity: isLoading !== null ? 0.7 : 1,
+                transition: "all 0.2s ease",
+              }}
+            >
+              {isLoading === "pro_monthly" ? "Loading..." : "Subscribe to Pro"}
+            </button>
           </div>
 
           {/* Infinite Pro Plan */}
           <div
             style={{
               backgroundColor: theme.colors.bg,
-              border: `1px solid ${theme.colors.border}`,
+              border: `2px solid ${theme.colors.text}`,
               padding: "24px",
               position: "relative",
             }}
@@ -472,9 +427,8 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 top: "-12px",
                 left: "50%",
                 transform: "translateX(-50%)",
-                backgroundColor: theme.colors.bgHover,
-                border: `1px solid ${theme.colors.border}`,
-                color: theme.colors.text,
+                backgroundColor: theme.colors.text,
+                color: theme.colors.bg,
                 fontSize: "11px",
                 fontWeight: 600,
                 letterSpacing: "0.05em",
@@ -493,7 +447,7 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
                 marginBottom: "12px",
               }}
             >
-              Infinite
+              Infinite Pro
             </div>
 
             <div style={{ marginBottom: "16px" }}>
@@ -552,9 +506,9 @@ export default function UpgradeModal({ onClose, feature }: UpgradeModalProps) {
               style={{
                 width: "100%",
                 padding: "14px",
-                backgroundColor: "transparent",
-                border: `1px solid ${theme.colors.border}`,
-                color: theme.colors.text,
+                backgroundColor: theme.colors.text,
+                border: "none",
+                color: theme.colors.bg,
                 fontSize: "14px",
                 fontWeight: 600,
                 cursor: isLoading !== null ? "not-allowed" : "pointer",

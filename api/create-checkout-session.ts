@@ -22,25 +22,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { userId, userEmail, plan, successUrl, cancelUrl } = req.body;
 
+    console.log("Checkout request:", { userId, userEmail, plan });
+
     if (!userId || !plan) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res
+        .status(400)
+        .json({ error: "Missing required fields: userId and plan" });
     }
 
-    // Price IDs from Stripe Dashboard
-    const priceIds: Record<string, string> = {
-      pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID!,
-      infinite: process.env.STRIPE_INFINITE_PRICE_ID!,
+    // Map plan to Stripe Price ID from environment variables
+    const priceIds: Record<string, string | undefined> = {
+      pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
+      infinite: process.env.STRIPE_INFINITE_PRICE_ID,
     };
 
     const priceId = priceIds[plan];
+
     if (!priceId) {
-      return res.status(400).json({ error: "Invalid plan" });
+      console.error("Price ID not found for plan:", plan);
+      console.error("Available env vars:", {
+        pro: process.env.STRIPE_PRO_MONTHLY_PRICE_ID ? "set" : "not set",
+        infinite: process.env.STRIPE_INFINITE_PRICE_ID ? "set" : "not set",
+      });
+      return res
+        .status(400)
+        .json({ error: `Price not configured for plan: ${plan}` });
     }
 
     const isSubscription = plan === "pro_monthly";
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
-      customer_email: userEmail,
+      customer_email: userEmail || undefined,
       client_reference_id: userId,
       metadata: {
         userId,
@@ -54,18 +66,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ],
       mode: isSubscription ? "subscription" : "payment",
       success_url:
-        successUrl ||
-        `${process.env.NEXT_PUBLIC_APP_URL}/settings?payment=success`,
+        successUrl || `${process.env.NEXT_PUBLIC_APP_URL}/?payment=success`,
       cancel_url:
-        cancelUrl ||
-        `${process.env.NEXT_PUBLIC_APP_URL}/settings?payment=cancelled`,
+        cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/?payment=cancelled`,
+      currency: "gbp",
     };
 
+    console.log("Creating Stripe session with config:", {
+      mode: sessionConfig.mode,
+      priceId,
+      successUrl: sessionConfig.success_url,
+    });
+
     const session = await stripe.checkout.sessions.create(sessionConfig);
+
+    console.log("Session created:", session.id);
 
     return res.status(200).json({ url: session.url });
   } catch (error: any) {
     console.error("Checkout session error:", error);
-    return res.status(500).json({ error: error.message });
+    return res
+      .status(500)
+      .json({ error: error.message || "Failed to create checkout session" });
   }
 }
