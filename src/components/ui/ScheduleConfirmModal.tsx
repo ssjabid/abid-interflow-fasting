@@ -237,9 +237,9 @@ export default function ScheduleConfirmModal({
             style={{
               flex: 1,
               padding: "14px",
-              backgroundColor: theme.colors.accent,
+              backgroundColor: theme.colors.text,
               border: "none",
-              color: "#FFFFFF",
+              color: theme.colors.bg,
               fontSize: "14px",
               fontWeight: 600,
               cursor: "pointer",
