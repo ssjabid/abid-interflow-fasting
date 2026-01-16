@@ -1,76 +1,71 @@
-import Stripe from 'stripe';
+import Stripe from "stripe";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: "2023-10-16",
 });
 
-export const config = {
-  runtime: 'edge',
-};
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-export default async function handler(req: Request) {
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { userId, userEmail, priceId, plan, successUrl, cancelUrl } = await req.json();
+    const { userId, userEmail, plan, successUrl, cancelUrl } = req.body;
 
-    if (!userId || !userEmail || !priceId) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (!userId || !plan) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Determine if this is a subscription or one-time payment
-    const isOneTime = plan === 'infinite';
+    // Price IDs from Stripe Dashboard
+    const priceIds: Record<string, string> = {
+      pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID!,
+      infinite: process.env.STRIPE_INFINITE_PRICE_ID!,
+    };
+
+    const priceId = priceIds[plan];
+    if (!priceId) {
+      return res.status(400).json({ error: "Invalid plan" });
+    }
+
+    const isSubscription = plan === "pro_monthly";
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer_email: userEmail,
       client_reference_id: userId,
-      payment_method_types: ['card'],
+      metadata: {
+        userId,
+        plan,
+      },
       line_items: [
         {
           price: priceId,
           quantity: 1,
         },
       ],
-      mode: isOneTime ? 'payment' : 'subscription',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        userId,
-        plan,
-      },
-      // Allow promotion codes
-      allow_promotion_codes: true,
+      mode: isSubscription ? "subscription" : "payment",
+      success_url:
+        successUrl ||
+        `${process.env.NEXT_PUBLIC_APP_URL}/settings?payment=success`,
+      cancel_url:
+        cancelUrl ||
+        `${process.env.NEXT_PUBLIC_APP_URL}/settings?payment=cancelled`,
     };
-
-    // Add subscription-specific options
-    if (!isOneTime) {
-      sessionConfig.subscription_data = {
-        metadata: {
-          userId,
-          plan,
-        },
-      };
-    }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
-    return new Response(
-      JSON.stringify({ url: session.url, sessionId: session.id }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return res.status(200).json({ url: session.url });
   } catch (error: any) {
-    console.error('Error creating checkout session:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error("Checkout session error:", error);
+    return res.status(500).json({ error: error.message });
   }
 }

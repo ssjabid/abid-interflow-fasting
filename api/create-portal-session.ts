@@ -1,71 +1,39 @@
 import Stripe from "stripe";
-import { initializeApp, cert, getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2023-10-16",
 });
 
-// Initialize Firebase Admin
-if (!getApps().length) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
-  });
-}
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-const db = getFirestore();
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
-export const config = {
-  runtime: "edge",
-};
-
-export default async function handler(req: Request) {
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { userId, returnUrl } = await req.json();
+    const { customerId, returnUrl } = req.body;
 
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Missing userId" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // Get customer ID from Firebase
-    const subDoc = await db.collection("subscriptions").doc(userId).get();
-    const subscription = subDoc.data();
-
-    if (!subscription?.stripeCustomerId) {
-      return new Response(
-        JSON.stringify({ error: "No Stripe customer found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
-      );
+    if (!customerId) {
+      return res.status(400).json({ error: "Missing customer ID" });
     }
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: subscription.stripeCustomerId,
-      return_url: returnUrl,
+      customer: customerId,
+      return_url: returnUrl || process.env.NEXT_PUBLIC_APP_URL,
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(200).json({ url: session.url });
   } catch (error: any) {
-    console.error("Error creating portal session:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    console.error("Portal session error:", error);
+    return res.status(500).json({ error: error.message });
   }
 }
