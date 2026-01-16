@@ -32,7 +32,8 @@ type View =
 
 function App() {
   const { currentUser, logout, loading: authLoading } = useAuth();
-  const { fasts, activeFast, startFast, endFast, deleteFast } = useFasts();
+  const { fasts, activeFast, startFast, endFast, updateFast, deleteFast } =
+    useFasts();
   const { theme } = useTheme();
   const { checkForNewAchievements, pendingUnlock, dismissUnlock } =
     useAchievements();
@@ -474,7 +475,11 @@ function App() {
                 )}
 
                 {currentView === "history" && (
-                  <History fasts={fasts} onDeleteFast={deleteFast} />
+                  <History
+                    fasts={fasts}
+                    onDeleteFast={deleteFast}
+                    onUpdateFast={updateFast}
+                  />
                 )}
 
                 {currentView === "statistics" && <Statistics fasts={fasts} />}

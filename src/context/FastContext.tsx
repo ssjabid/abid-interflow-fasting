@@ -28,6 +28,10 @@ interface FastContextType {
     mood?: number,
     energyLevel?: number
   ) => Promise<void>;
+  updateFast: (
+    fastId: string,
+    updates: { mood?: number; energyLevel?: number; notes?: string }
+  ) => Promise<void>;
   deleteFast: (fastId: string) => Promise<void>;
   clearAllData: () => Promise<void>;
   loading: boolean;
@@ -62,7 +66,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
     // Auto-complete if exceeded target by more than 2 hours (grace period)
     if (elapsedMinutes > targetMinutes + 120) {
       try {
-        const fastRef = doc(db, "fasts", fast.id);
+        const fastRef = doc(db, "fasts", fast.UserId);
         await updateDoc(fastRef, {
           endTime: Timestamp.fromDate(
             new Date(start.getTime() + targetMinutes * 60 * 1000)
@@ -71,7 +75,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
           status: "completed",
         });
         console.log(
-          `Auto-completed fast ${fast.id} (exceeded ${
+          `Auto-completed fast ${fast.UserId} (exceeded ${
             protocol.name
           } by ${Math.round((elapsedMinutes - targetMinutes) / 60)}h)`
         );
@@ -106,15 +110,15 @@ export function FastProvider({ children }: { children: ReactNode }) {
           (now.getTime() - start.getTime()) / (1000 * 60)
         );
 
-        const fastRef = doc(db, "fasts", oldFast.id);
+        const fastRef = doc(db, "fasts", oldFast.UserId);
         await updateDoc(fastRef, {
           endTime: serverTimestamp(),
           duration,
           status: "completed",
         });
-        console.log(`Ended duplicate active fast: ${oldFast.id}`);
+        console.log(`Ended duplicate active fast: ${oldFast.UserId}`);
       } catch (e) {
-        console.error(`Failed to end fast ${oldFast.id}:`, e);
+        console.error(`Failed to end fast ${oldFast.UserId}:`, e);
       }
     }
 
@@ -163,7 +167,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
 
         if (startTime.getFullYear() > 2000) {
           fastsData.push({
-            id: docSnapshot.id,
+            UserId: docSnapshot.id,
             startTime,
             endTime,
             duration: data.duration || 0,
@@ -245,7 +249,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const fast = fasts.find((f) => f.id === fastId);
+      const fast = fasts.find((f) => f.UserId === fastId);
       if (!fast) {
         console.error("Fast not found:", fastId);
         return;
@@ -282,6 +286,25 @@ export function FastProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error deleting fast:", error);
       alert("Failed to delete fast. Please try again.");
+    }
+  };
+
+  // Update a completed fast (mood, energy, notes)
+  const updateFast = async (
+    fastId: string,
+    updates: { mood?: number; energyLevel?: number; notes?: string }
+  ) => {
+    if (!currentUser) return;
+
+    try {
+      const fastRef = doc(db, "fasts", fastId);
+      await updateDoc(fastRef, {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error updating fast:", error);
+      alert("Failed to update fast. Please try again.");
     }
   };
 
@@ -331,6 +354,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
     activeFast,
     startFast,
     endFast,
+    updateFast,
     deleteFast,
     clearAllData,
     loading,

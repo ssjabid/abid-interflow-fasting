@@ -8,6 +8,7 @@ import type { FastingSchedule } from "../../types";
 import { PROTOCOLS } from "../../types";
 import ShareModal from "../ShareModal";
 import ProBadge from "../ui/ProBadge";
+import ScheduleConfirmModal from "../ui/ScheduleConfirmModal";
 
 interface SettingsProps {
   userId: string;
@@ -30,6 +31,7 @@ export default function Settings({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
 
   // Account state
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -91,20 +93,43 @@ export default function Settings({
     localStorage.setItem(`profile_${userId}`, JSON.stringify(profile));
   };
 
-  const saveSchedule = (enabled: boolean, start: string, end: string) => {
+  const saveSchedule = (
+    enabled: boolean,
+    start: string,
+    end: string,
+    isNewSchedule: boolean = false
+  ) => {
     const stored = localStorage.getItem(`profile_${userId}`);
     if (stored) {
       const profile = JSON.parse(stored);
+
+      // Calculate tomorrow's date for new schedules
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+
       const schedule: FastingSchedule = {
         enabled,
         eatingWindowStart: start,
         eatingWindowEnd: end,
         fastingHours: 16,
         remindersBefore: 15,
+        // Only set startDate when enabling a new schedule
+        startDate: isNewSchedule
+          ? tomorrow.toISOString()
+          : profile.schedule?.startDate,
+        lastAutoStartDate: profile.schedule?.lastAutoStartDate,
       };
       profile.schedule = schedule;
       localStorage.setItem(`profile_${userId}`, JSON.stringify(profile));
     }
+  };
+
+  // Handle schedule confirmation
+  const handleScheduleConfirm = () => {
+    setScheduleEnabled(true);
+    saveSchedule(true, eatingStart, eatingEnd, true); // true = new schedule
+    setShowScheduleConfirm(false);
   };
 
   // Pending accent selection (before applying)
@@ -1194,14 +1219,19 @@ export default function Settings({
               Enable Schedule
             </div>
             <div style={{ fontSize: "13px", color: theme.colors.textMuted }}>
-              Show reminders based on your eating window
+              Auto-start fasts based on your eating window
             </div>
           </div>
           <button
             onClick={() => {
-              const newEnabled = !scheduleEnabled;
-              setScheduleEnabled(newEnabled);
-              saveSchedule(newEnabled, eatingStart, eatingEnd);
+              if (!scheduleEnabled) {
+                // Show confirmation modal when enabling
+                setShowScheduleConfirm(true);
+              } else {
+                // Disable immediately
+                setScheduleEnabled(false);
+                saveSchedule(false, eatingStart, eatingEnd);
+              }
             }}
             style={{
               width: "48px",
@@ -2369,6 +2399,15 @@ export default function Settings({
           </div>
         </div>
       )}
+
+      {/* Schedule Confirmation Modal */}
+      <ScheduleConfirmModal
+        isVisible={showScheduleConfirm}
+        eatingWindowStart={eatingStart}
+        eatingWindowEnd={eatingEnd}
+        onConfirm={handleScheduleConfirm}
+        onCancel={() => setShowScheduleConfirm(false)}
+      />
     </div>
   );
 }

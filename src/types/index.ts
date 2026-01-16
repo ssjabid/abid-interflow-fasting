@@ -1,5 +1,5 @@
 export interface Fast {
-  id: string;
+  UserId: string;
   startTime: Date;
   endTime: Date | null;
   duration: number; // in minutes
@@ -8,6 +8,8 @@ export interface Fast {
   protocol?: string;
   mood?: number; // 1-5 scale
   energyLevel?: number; // 1-5 scale
+  isScheduled?: boolean; // true if auto-started by schedule
+  targetDuration?: number; // target duration in minutes for scheduled fasts
 }
 
 export interface User {
@@ -34,6 +36,8 @@ export interface FastingSchedule {
   eatingWindowEnd: string;
   fastingHours: number;
   remindersBefore: number;
+  startDate?: string; // ISO date string - schedule starts from this date
+  lastAutoStartDate?: string; // Track last auto-started fast date to prevent duplicates
 }
 
 export interface UserProfile {

@@ -1,8 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Fast, FastingSchedule } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
 import FastLogger from "./FastLogger";
 import ScheduleReminder from "../ui/ScheduleReminder";
+import {
+  shouldAutoStartFast,
+  createAutoStartedFast,
+} from "../../services/autoSchedule";
 
 interface DashboardProps {
   fasts: Fast[];
@@ -29,6 +33,7 @@ export default function Dashboard({
   const [schedule, setSchedule] = useState<FastingSchedule | null>(null);
   const [preferredProtocol, setPreferredProtocol] = useState("16:8");
   const [userName, setUserName] = useState("");
+  const [autoStartChecked, setAutoStartChecked] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(`profile_${userId}`);
@@ -44,17 +49,53 @@ export default function Dashboard({
     }
   }, [userId]);
 
+  // Auto-start scheduled fasts
+  const checkAndAutoStartFast = useCallback(async () => {
+    if (!schedule || autoStartChecked) return;
+
+    if (shouldAutoStartFast(schedule, activeFast)) {
+      const autoFastData = createAutoStartedFast(schedule);
+
+      // Update lastAutoStartDate in schedule
+      const stored = localStorage.getItem(`profile_${userId}`);
+      if (stored) {
+        const profile = JSON.parse(stored);
+        profile.schedule = {
+          ...profile.schedule,
+          lastAutoStartDate: new Date().toISOString(),
+        };
+        localStorage.setItem(`profile_${userId}`, JSON.stringify(profile));
+        setSchedule(profile.schedule);
+      }
+
+      // Start the fast - only pass what startFast actually uses
+      await onStartFast({
+        notes: autoFastData.notes,
+        protocol: autoFastData.protocol,
+        isScheduled: autoFastData.isScheduled,
+        targetDuration: autoFastData.targetDuration,
+      } as Fast);
+    }
+
+    setAutoStartChecked(true);
+  }, [schedule, activeFast, userId, onStartFast, autoStartChecked]);
+
+  // Check for auto-start on mount and every minute
+  useEffect(() => {
+    checkAndAutoStartFast();
+
+    const interval = setInterval(() => {
+      setAutoStartChecked(false); // Reset to allow re-checking
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [checkAndAutoStartFast]);
+
   const handleScheduledStart = () => {
-    // Start fast with preferred protocol
-    const newFast: Fast = {
-      id: Date.now().toString(),
-      startTime: new Date(),
-      endTime: null,
-      duration: 0,
-      status: "active",
+    // Start fast with preferred protocol - only pass what startFast uses
+    onStartFast({
       protocol: preferredProtocol,
-    };
-    onStartFast(newFast);
+    } as Fast);
   };
 
   const completedFasts = fasts.filter((f) => f.status === "completed");

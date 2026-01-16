@@ -6,10 +6,15 @@ import {
   useSubscription,
   FREE_TIER_LIMITS,
 } from "../../context/SubscriptionContext";
+import EditFastModal from "../ui/EditFastModal";
 
 interface HistoryProps {
   fasts: Fast[];
   onDeleteFast: (fastId: string) => void;
+  onUpdateFast: (
+    fastId: string,
+    updates: { mood?: number; energyLevel?: number; notes?: string }
+  ) => void;
 }
 
 // Mood and Energy level definitions
@@ -70,10 +75,15 @@ const MoodIcon = ({ value, color }: { value: number; color: string }) => {
   );
 };
 
-export default function History({ fasts, onDeleteFast }: HistoryProps) {
+export default function History({
+  fasts,
+  onDeleteFast,
+  onUpdateFast,
+}: HistoryProps) {
   const { theme } = useTheme();
   const { canAccessFeature, promptUpgrade } = useSubscription();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [editingFast, setEditingFast] = useState<Fast | null>(null);
 
   // Filter to completed fasts
   const allCompletedFasts = fasts
@@ -325,7 +335,7 @@ export default function History({ fasts, onDeleteFast }: HistoryProps) {
 
               return (
                 <div
-                  key={fast.id}
+                  key={fast.UserId}
                   style={{
                     backgroundColor: theme.colors.bgCard,
                     border: `1px solid ${theme.colors.border}`,
@@ -395,13 +405,47 @@ export default function History({ fasts, onDeleteFast }: HistoryProps) {
                         </span>
                       )}
 
+                      {/* Edit Button */}
                       <button
-                        onClick={() => handleDelete(fast.id)}
+                        onClick={() => setEditingFast(fast)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: theme.colors.textMuted,
+                          fontSize: "16px",
+                          cursor: "pointer",
+                          padding: "4px 8px",
+                          transition: "color 0.3s ease",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.color = theme.colors.accent)
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.color = theme.colors.textMuted)
+                        }
+                        title="Edit fast"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDelete(fast.UserId)}
                         style={{
                           background: "none",
                           border: "none",
                           color:
-                            deleteConfirm === fast.id
+                            deleteConfirm === fast.UserId
                               ? "#ef4444"
                               : theme.colors.textMuted,
                           fontSize: "18px",
@@ -414,17 +458,17 @@ export default function History({ fasts, onDeleteFast }: HistoryProps) {
                         }
                         onMouseLeave={(e) =>
                           (e.currentTarget.style.color =
-                            deleteConfirm === fast.id
+                            deleteConfirm === fast.UserId
                               ? "#ef4444"
                               : theme.colors.textMuted)
                         }
                         title={
-                          deleteConfirm === fast.id
+                          deleteConfirm === fast.UserId
                             ? "Click again to confirm"
                             : "Delete fast"
                         }
                       >
-                        {deleteConfirm === fast.id ? "✓" : "×"}
+                        {deleteConfirm === fast.UserId ? "✓" : "×"}
                       </button>
                     </div>
                   </div>
@@ -564,6 +608,14 @@ export default function History({ fasts, onDeleteFast }: HistoryProps) {
           </div>
         </div>
       ))}
+
+      {/* Edit Fast Modal */}
+      <EditFastModal
+        fast={editingFast}
+        isVisible={editingFast !== null}
+        onSave={onUpdateFast}
+        onClose={() => setEditingFast(null)}
+      />
     </div>
   );
 }
