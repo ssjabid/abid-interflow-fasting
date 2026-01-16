@@ -179,10 +179,18 @@ export default function FastLogger({
 
   const confirmEndFast = () => {
     if (activeFast) {
-      onEndFast((activeFast as any).id, endMood, endEnergy);
-      setShowEndModal(false);
-      setEndMood(3);
-      setEndEnergy(3);
+      // Get ID from the fast object - it's added by Firebase
+      const fastId = (activeFast as { id?: string }).id;
+      console.log("Ending fast with ID:", fastId, "activeFast:", activeFast);
+      if (fastId) {
+        onEndFast(fastId, endMood, endEnergy);
+        setShowEndModal(false);
+        setEndMood(3);
+        setEndEnergy(3);
+      } else {
+        console.error("No fast ID found on activeFast:", activeFast);
+        alert("Error: Could not find fast ID. Please refresh and try again.");
+      }
     }
   };
 
