@@ -165,16 +165,11 @@ export default function FastLogger({
   }, [activeFast]);
 
   const handleStartFast = () => {
-    const newFast: Fast = {
-      id: Date.now().toString(),
-      startTime: new Date(),
-      endTime: null,
-      duration: 0,
-      status: "active",
+    // Only pass what startFast actually uses - Firebase handles the rest
+    onStartFast({
       notes: notes || undefined,
       protocol: selectedProtocol,
-    };
-    onStartFast(newFast);
+    } as Fast);
     setNotes("");
   };
 
@@ -184,7 +179,7 @@ export default function FastLogger({
 
   const confirmEndFast = () => {
     if (activeFast) {
-      onEndFast(activeFast.id, endMood, endEnergy);
+      onEndFast((activeFast as any).id, endMood, endEnergy);
       setShowEndModal(false);
       setEndMood(3);
       setEndEnergy(3);
