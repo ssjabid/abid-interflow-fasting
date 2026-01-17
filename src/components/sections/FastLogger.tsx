@@ -31,8 +31,8 @@ export default function FastLogger({
         ? "#FFFFFF"
         : "#FFFFFF"
       : theme.accent === "default"
-      ? "#0B0B0C"
-      : "#FFFFFF";
+        ? "#0B0B0C"
+        : "#FFFFFF";
 
   const [notes, setNotes] = useState("");
   const [selectedProtocol, setSelectedProtocol] = useState("16:8");
@@ -48,7 +48,7 @@ export default function FastLogger({
   const [newCustomHours, setNewCustomHours] = useState(16);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [protocolToDelete, setProtocolToDelete] = useState<Protocol | null>(
-    null
+    null,
   );
 
   // Load custom protocols and preferences
@@ -155,7 +155,7 @@ export default function FastLogger({
       setElapsedTime(
         `${hours.toString().padStart(2, "0")}:${minutes
           .toString()
-          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
       );
     };
 
@@ -178,25 +178,25 @@ export default function FastLogger({
   };
 
   const confirmEndFast = () => {
-    if (activeFast) {
-      // Get ID from the fast object - it's added by Firebase
-      const fastId = (activeFast as { id?: string }).id;
-      console.log("Ending fast with ID:", fastId, "activeFast:", activeFast);
-      if (fastId) {
-        onEndFast(fastId, endMood, endEnergy);
-        setShowEndModal(false);
-        setEndMood(3);
-        setEndEnergy(3);
-      } else {
-        console.error("No fast ID found on activeFast:", activeFast);
-        alert("Error: Could not find fast ID. Please refresh and try again.");
-      }
+    if (activeFast && activeFast.id) {
+      console.log("Ending fast:", activeFast.id);
+      onEndFast(activeFast.id, endMood, endEnergy);
+      setShowEndModal(false);
+      setEndMood(3);
+      setEndEnergy(3);
+    } else {
+      console.error("Cannot end fast - activeFast:", activeFast);
+      console.error(
+        "Keys on activeFast:",
+        activeFast ? Object.keys(activeFast) : "null",
+      );
+      alert("Error: Cannot find active fast. Please refresh and try again.");
     }
   };
 
   const currentProtocol =
     allProtocols.find(
-      (p) => p.id === (activeFast?.protocol || selectedProtocol)
+      (p) => p.id === (activeFast?.protocol || selectedProtocol),
     ) || PROTOCOLS[0];
   const targetMinutes = currentProtocol
     ? currentProtocol.fastingHours * 60
@@ -215,10 +215,10 @@ export default function FastLogger({
   const currentZone: FastingZone =
     FASTING_ZONES.find(
       (zone: FastingZone) =>
-        elapsedHours >= zone.minHours && elapsedHours < zone.maxHours
+        elapsedHours >= zone.minHours && elapsedHours < zone.maxHours,
     ) || FASTING_ZONES[0];
   const nextZone: FastingZone | undefined = FASTING_ZONES.find(
-    (zone: FastingZone) => zone.minHours > elapsedHours
+    (zone: FastingZone) => zone.minHours > elapsedHours,
   );
 
   return (
@@ -470,7 +470,7 @@ export default function FastLogger({
                         title={`${zone.name}: ${zone.minHours}-${zone.maxHours}h`}
                       />
                     );
-                  }
+                  },
                 )}
               </div>
               <div
@@ -1221,7 +1221,7 @@ export default function FastLogger({
                     {item.icon(
                       endMood === item.value
                         ? accentTextColor
-                        : theme.colors.textMuted
+                        : theme.colors.textMuted,
                     )}
                     <span style={{ fontSize: "9px", fontWeight: 500 }}>
                       {item.label}

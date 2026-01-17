@@ -1,5 +1,5 @@
 export interface Fast {
-  UserId: string;
+  id: string;
   startTime: Date;
   endTime: Date | null;
   duration: number; // in minutes

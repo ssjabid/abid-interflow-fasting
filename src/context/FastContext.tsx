@@ -26,12 +26,12 @@ interface FastContextType {
   endFast: (
     fastId: string,
     mood?: number,
-    energyLevel?: number
+    energyLevel?: number,
   ) => Promise<void>;
   updateFast: (
     fastId: string,
-    updates: { mood?: number; energyLevel?: number; notes?: string }
-  ) => Promise<void>;
+    updates: { mood?: number; energyLevel?: number; notes?: string },
+  ) => void;
   deleteFast: (fastId: string) => Promise<void>;
   clearAllData: () => Promise<void>;
   loading: boolean;
@@ -66,18 +66,18 @@ export function FastProvider({ children }: { children: ReactNode }) {
     // Auto-complete if exceeded target by more than 2 hours (grace period)
     if (elapsedMinutes > targetMinutes + 120) {
       try {
-        const fastRef = doc(db, "fasts", fast.UserId);
+        const fastRef = doc(db, "fasts", fast.id);
         await updateDoc(fastRef, {
           endTime: Timestamp.fromDate(
-            new Date(start.getTime() + targetMinutes * 60 * 1000)
+            new Date(start.getTime() + targetMinutes * 60 * 1000),
           ),
           duration: targetMinutes,
           status: "completed",
         });
         console.log(
-          `Auto-completed fast ${fast.UserId} (exceeded ${
+          `Auto-completed fast ${fast.id} (exceeded ${
             protocol.name
-          } by ${Math.round((elapsedMinutes - targetMinutes) / 60)}h)`
+          } by ${Math.round((elapsedMinutes - targetMinutes) / 60)}h)`,
         );
         return true;
       } catch (e) {
@@ -96,7 +96,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
     // Sort by start time, most recent first
     const sorted = [...activeFasts].sort(
       (a, b) =>
-        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
     );
 
     const [mostRecent, ...older] = sorted;
@@ -107,18 +107,18 @@ export function FastProvider({ children }: { children: ReactNode }) {
         const now = new Date();
         const start = new Date(oldFast.startTime);
         const duration = Math.floor(
-          (now.getTime() - start.getTime()) / (1000 * 60)
+          (now.getTime() - start.getTime()) / (1000 * 60),
         );
 
-        const fastRef = doc(db, "fasts", oldFast.UserId);
+        const fastRef = doc(db, "fasts", oldFast.id);
         await updateDoc(fastRef, {
           endTime: serverTimestamp(),
           duration,
           status: "completed",
         });
-        console.log(`Ended duplicate active fast: ${oldFast.UserId}`);
+        console.log(`Ended duplicate active fast: ${oldFast.id}`);
       } catch (e) {
-        console.error(`Failed to end fast ${oldFast.UserId}:`, e);
+        console.error(`Failed to end fast ${oldFast.id}:`, e);
       }
     }
 
@@ -137,7 +137,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
 
     const q = query(
       collection(db, "fasts"),
-      where("userId", "==", currentUser.uid)
+      where("userId", "==", currentUser.uid),
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -167,7 +167,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
 
         if (startTime.getFullYear() > 2000) {
           fastsData.push({
-            UserId: docSnapshot.id,
+            id: docSnapshot.id,
             startTime,
             endTime,
             duration: data.duration || 0,
@@ -184,6 +184,11 @@ export function FastProvider({ children }: { children: ReactNode }) {
 
       // Handle active fasts
       const activeFasts = fastsData.filter((f) => f.status === "active");
+      console.log(
+        "Active fasts found:",
+        activeFasts.length,
+        activeFasts.map((f) => ({ id: f.id, status: f.status })),
+      );
 
       if (activeFasts.length === 0) {
         setActiveFast(null);
@@ -191,6 +196,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
         // Check if should auto-complete
         autoCompleteFast(activeFasts[0]).then((completed) => {
           if (!completed) {
+            console.log("Setting activeFast:", activeFasts[0].id);
             setActiveFast(activeFasts[0]);
           }
         });
@@ -214,7 +220,10 @@ export function FastProvider({ children }: { children: ReactNode }) {
   }, [currentUser]);
 
   const startFast = async (fast: Fast) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.error("No current user - cannot start fast");
+      return;
+    }
 
     // Check if there's already an active fast
     if (activeFast) {
@@ -223,7 +232,8 @@ export function FastProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      await addDoc(collection(db, "fasts"), {
+      console.log("Starting fast for user:", currentUser.uid);
+      const docRef = await addDoc(collection(db, "fasts"), {
         userId: currentUser.uid,
         startTime: serverTimestamp(),
         endTime: null,
@@ -232,6 +242,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
         notes: fast.notes || null,
         protocol: fast.protocol || null,
       });
+      console.log("Fast started successfully with ID:", docRef.id);
     } catch (error) {
       console.error("Error starting fast:", error);
       alert("Failed to start fast. Please try again.");
@@ -241,7 +252,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
   const endFast = async (
     fastId: string,
     mood?: number,
-    energyLevel?: number
+    energyLevel?: number,
   ) => {
     if (!currentUser) {
       console.error("No user logged in");
@@ -249,7 +260,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const fast = fasts.find((f) => f.UserId === fastId);
+      const fast = fasts.find((f) => f.id === fastId);
       if (!fast) {
         console.error("Fast not found:", fastId);
         return;
@@ -258,7 +269,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
       const now = new Date();
       const start = new Date(fast.startTime);
       const duration = Math.floor(
-        (now.getTime() - start.getTime()) / (1000 * 60)
+        (now.getTime() - start.getTime()) / (1000 * 60),
       );
 
       const fastRef = doc(db, "fasts", fastId);
@@ -278,11 +289,21 @@ export function FastProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteFast = async (fastId: string) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.error("Cannot delete fast: no user");
+      return;
+    }
+
+    if (!fastId || typeof fastId !== "string" || fastId.trim() === "") {
+      console.error("Cannot delete fast: invalid fastId:", fastId);
+      return;
+    }
 
     try {
+      console.log("Deleting fast:", fastId);
       const fastRef = doc(db, "fasts", fastId);
       await deleteDoc(fastRef);
+      console.log("Fast deleted successfully:", fastId);
     } catch (error) {
       console.error("Error deleting fast:", error);
       alert("Failed to delete fast. Please try again.");
@@ -292,7 +313,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
   // Update a completed fast (mood, energy, notes)
   const updateFast = async (
     fastId: string,
-    updates: { mood?: number; energyLevel?: number; notes?: string }
+    updates: { mood?: number; energyLevel?: number; notes?: string },
   ) => {
     if (!currentUser) return;
 
@@ -302,6 +323,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
         ...updates,
         updatedAt: serverTimestamp(),
       });
+      console.log("Fast updated successfully:", fastId);
     } catch (error) {
       console.error("Error updating fast:", error);
       alert("Failed to update fast. Please try again.");
@@ -316,7 +338,7 @@ export function FastProvider({ children }: { children: ReactNode }) {
       // Delete all fasts from Firebase
       const q = query(
         collection(db, "fasts"),
-        where("userId", "==", currentUser.uid)
+        where("userId", "==", currentUser.uid),
       );
 
       const snapshot = await getDocs(q);

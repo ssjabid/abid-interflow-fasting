@@ -13,7 +13,7 @@ interface HistoryProps {
   onDeleteFast: (fastId: string) => void;
   onUpdateFast: (
     fastId: string,
-    updates: { mood?: number; energyLevel?: number; notes?: string }
+    updates: { mood?: number; energyLevel?: number; notes?: string },
   ) => void;
 }
 
@@ -90,7 +90,7 @@ export default function History({
     .filter((fast) => fast.status === "completed")
     .sort(
       (a, b) =>
-        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
     );
 
   // Limit to 7 days for free users
@@ -101,7 +101,7 @@ export default function History({
   const completedFasts = hasUnlimitedHistory
     ? allCompletedFasts
     : allCompletedFasts.filter(
-        (fast) => new Date(fast.startTime) >= cutoffDate
+        (fast) => new Date(fast.startTime) >= cutoffDate,
       );
 
   const hiddenFastsCount = allCompletedFasts.length - completedFasts.length;
@@ -142,7 +142,12 @@ export default function History({
     groupedFasts[dateKey].push(fast);
   });
 
-  const handleDelete = (fastId: string) => {
+  const handleDelete = (fastId: string | undefined) => {
+    if (!fastId) {
+      console.error("Cannot delete fast: no ID provided");
+      return;
+    }
+
     if (deleteConfirm === fastId) {
       onDeleteFast(fastId);
       setDeleteConfirm(null);
@@ -244,7 +249,7 @@ export default function History({
           }}
         >
           {Math.floor(
-            completedFasts.reduce((sum, f) => sum + f.duration, 0) / 60
+            completedFasts.reduce((sum, f) => sum + f.duration, 0) / 60,
           )}{" "}
           total hours
         </span>
@@ -335,7 +340,7 @@ export default function History({
 
               return (
                 <div
-                  key={fast.UserId}
+                  key={fast.id}
                   style={{
                     backgroundColor: theme.colors.bgCard,
                     border: `1px solid ${theme.colors.border}`,
@@ -440,12 +445,12 @@ export default function History({
 
                       {/* Delete Button */}
                       <button
-                        onClick={() => handleDelete(fast.UserId)}
+                        onClick={() => handleDelete(fast.id)}
                         style={{
                           background: "none",
                           border: "none",
                           color:
-                            deleteConfirm === fast.UserId
+                            deleteConfirm === fast.id
                               ? "#ef4444"
                               : theme.colors.textMuted,
                           fontSize: "18px",
@@ -458,17 +463,17 @@ export default function History({
                         }
                         onMouseLeave={(e) =>
                           (e.currentTarget.style.color =
-                            deleteConfirm === fast.UserId
+                            deleteConfirm === fast.id
                               ? "#ef4444"
                               : theme.colors.textMuted)
                         }
                         title={
-                          deleteConfirm === fast.UserId
+                          deleteConfirm === fast.id
                             ? "Click again to confirm"
                             : "Delete fast"
                         }
                       >
-                        {deleteConfirm === fast.UserId ? "✓" : "×"}
+                        {deleteConfirm === fast.id ? "✓" : "×"}
                       </button>
                     </div>
                   </div>

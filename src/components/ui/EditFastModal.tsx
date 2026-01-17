@@ -7,7 +7,7 @@ interface EditFastModalProps {
   isVisible: boolean;
   onSave: (
     fastId: string,
-    updates: { mood?: number; energyLevel?: number; notes?: string }
+    updates: { mood?: number; energyLevel?: number; notes?: string },
   ) => void;
   onClose: () => void;
 }
@@ -113,17 +113,44 @@ export default function EditFastModal({
     }
   }, [fast]);
 
+  // Animation state for closing
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 200);
+  };
+
   if (!isVisible || !fast) return null;
 
   const handleSave = async () => {
+    if (!fast.id) {
+      console.error("No fast ID found");
+      alert("Error: Could not save changes. Please try again.");
+      return;
+    }
+
     setIsSaving(true);
-    await onSave((fast as any).id, {
-      mood,
-      energyLevel,
-      notes: notes.trim() || undefined,
-    });
-    setIsSaving(false);
-    onClose();
+    try {
+      await onSave(fast.id, {
+        mood,
+        energyLevel,
+        notes: notes.trim() || undefined,
+      });
+      // Close with animation after successful save
+      setIsClosing(true);
+      setTimeout(() => {
+        setIsSaving(false);
+        setIsClosing(false);
+        onClose();
+      }, 200);
+    } catch (error) {
+      console.error("Error saving:", error);
+      setIsSaving(false);
+    }
   };
 
   const formatDuration = (minutes: number) => {
@@ -159,9 +186,10 @@ export default function EditFastModal({
         justifyContent: "center",
         zIndex: 1000,
         padding: "24px",
-        animation: "fadeIn 0.3s ease",
+        opacity: isClosing ? 0 : 1,
+        transition: "opacity 0.2s ease",
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         style={{
@@ -196,7 +224,7 @@ export default function EditFastModal({
               Edit Fast
             </h3>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               style={{
                 background: "none",
                 border: "none",
@@ -243,11 +271,7 @@ export default function EditFastModal({
                   padding: "12px 8px",
                   backgroundColor:
                     mood === level.value ? theme.colors.text : theme.colors.bg,
-                  border: `1px solid ${
-                    mood === level.value
-                      ? theme.colors.text
-                      : theme.colors.border
-                  }`,
+                  border: `1px solid ${mood === level.value ? theme.colors.text : theme.colors.border}`,
                   color:
                     mood === level.value ? theme.colors.bg : theme.colors.text,
                   fontSize: "11px",
@@ -293,7 +317,7 @@ export default function EditFastModal({
                 key={level.value}
                 onClick={() =>
                   setEnergyLevel(
-                    energyLevel === level.value ? undefined : level.value
+                    energyLevel === level.value ? undefined : level.value,
                   )
                 }
                 style={{
@@ -304,11 +328,7 @@ export default function EditFastModal({
                     energyLevel === level.value
                       ? theme.colors.text
                       : theme.colors.bg,
-                  border: `1px solid ${
-                    energyLevel === level.value
-                      ? theme.colors.text
-                      : theme.colors.border
-                  }`,
+                  border: `1px solid ${energyLevel === level.value ? theme.colors.text : theme.colors.border}`,
                   color:
                     energyLevel === level.value
                       ? theme.colors.bg
@@ -380,7 +400,7 @@ export default function EditFastModal({
         {/* Buttons */}
         <div style={{ display: "flex", gap: "12px" }}>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               flex: 1,
               padding: "14px",
