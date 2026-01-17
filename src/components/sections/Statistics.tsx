@@ -57,8 +57,8 @@ export default function Statistics({ fasts }: StatisticsProps) {
         ? "#FFFFFF"
         : "#FFFFFF"
       : theme.accent === "default"
-      ? "#0B0B0C"
-      : "#FFFFFF";
+        ? "#0B0B0C"
+        : "#FFFFFF";
 
   const [activeTab, setActiveTab] = useState<StatsTab>("overview");
   const [isTabTransitioning, setIsTabTransitioning] = useState(false);
@@ -108,7 +108,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - range.days);
     return fasts.filter(
-      (f) => f.status === "completed" && new Date(f.startTime) >= cutoffDate
+      (f) => f.status === "completed" && new Date(f.startTime) >= cutoffDate,
     );
   }, [fasts, dateRange]);
 
@@ -160,13 +160,13 @@ export default function Statistics({ fasts }: StatisticsProps) {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - range.days);
       allFastsInRange = fasts.filter(
-        (f) => new Date(f.startTime) >= cutoffDate
+        (f) => new Date(f.startTime) >= cutoffDate,
       );
     }
 
     if (allFastsInRange.length === 0) return 0;
     const completed = allFastsInRange.filter(
-      (f) => f.status === "completed"
+      (f) => f.status === "completed",
     ).length;
     return Math.round((completed / allFastsInRange.length) * 100);
   }, [fasts, dateRange]);
@@ -235,7 +235,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
       weeks.push({
         week: `W${numWeeks - i}`,
         hours: Math.round(
-          weekFasts.reduce((sum, f) => sum + f.duration, 0) / 60
+          weekFasts.reduce((sum, f) => sum + f.duration, 0) / 60,
         ),
         fasts: weekFasts.length,
       });
@@ -261,7 +261,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
   const bestDay = useMemo(() => {
     return dayOfWeekData.reduce(
       (best, day) => (day.hours > best.hours ? day : best),
-      dayOfWeekData[0]
+      dayOfWeekData[0],
     );
   }, [dayOfWeekData]);
 
@@ -290,7 +290,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
     const range = DATE_RANGES.find((r) => r.id === dateRange);
     const days = range?.days || 30;
     const daysWithFasts = new Set(
-      filteredFasts.map((f) => new Date(f.startTime).toDateString())
+      filteredFasts.map((f) => new Date(f.startTime).toDateString()),
     ).size;
     const frequencyScore = Math.min((daysWithFasts / days) * 100, 100) * 0.4;
     const streakScore = Math.min((currentStreak / 7) * 100, 100) * 0.3;
@@ -370,7 +370,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
 
     const favoriteTime = timeOfDayData.reduce(
       (best, p) => (p.fasts > best.fasts ? p : best),
-      timeOfDayData[0]
+      timeOfDayData[0],
     );
     if (favoriteTime.fasts > 0) {
       result.push({
@@ -539,10 +539,8 @@ export default function Statistics({ fasts }: StatisticsProps) {
       <div
         style={{
           display: "flex",
-          gap: "4px",
+          gap: "8px",
           marginBottom: "24px",
-          overflowX: "auto",
-          paddingBottom: "4px",
         }}
       >
         {TABS.map((tab) => (
@@ -550,7 +548,9 @@ export default function Statistics({ fasts }: StatisticsProps) {
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
             style={{
-              padding: "10px 20px",
+              flex: 1,
+              padding: "12px 8px",
+              height: "44px",
               backgroundColor:
                 activeTab === tab.id
                   ? theme.colors.accent
@@ -563,7 +563,6 @@ export default function Statistics({ fasts }: StatisticsProps) {
               fontSize: "13px",
               fontWeight: 500,
               cursor: "pointer",
-              whiteSpace: "nowrap",
               transition: "all 0.2s ease",
             }}
           >
@@ -608,7 +607,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
                   value: `${currentStreak}d`,
                   color:
                     currentStreak > 0
-                      ? theme.colors.success
+                      ? theme.colors.accent
                       : theme.colors.textMuted,
                 },
                 {
@@ -626,7 +625,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
                   value: `${completionRate}%`,
                   color:
                     completionRate >= 80
-                      ? theme.colors.success
+                      ? theme.colors.accent
                       : theme.colors.text,
                 },
               ].map((stat, i) => (
@@ -705,10 +704,10 @@ export default function Statistics({ fasts }: StatisticsProps) {
                     fontWeight: 700,
                     color:
                       consistencyScore >= 70
-                        ? theme.colors.success
-                        : consistencyScore >= 40
                         ? theme.colors.accent
-                        : theme.colors.textMuted,
+                        : consistencyScore >= 40
+                          ? theme.colors.accent
+                          : theme.colors.textMuted,
                   }}
                 >
                   {consistencyScore}
@@ -728,10 +727,10 @@ export default function Statistics({ fasts }: StatisticsProps) {
                     height: "100%",
                     backgroundColor:
                       consistencyScore >= 70
-                        ? theme.colors.success
-                        : consistencyScore >= 40
                         ? theme.colors.accent
-                        : theme.colors.textMuted,
+                        : consistencyScore >= 40
+                          ? theme.colors.accent
+                          : theme.colors.textMuted,
                     transition: "width 0.5s ease",
                   }}
                 />
@@ -980,10 +979,10 @@ export default function Statistics({ fasts }: StatisticsProps) {
                 dateRange === "all" || dateRange === "1y"
                   ? 12
                   : dateRange === "6m"
-                  ? 6
-                  : dateRange === "90d"
-                  ? 3
-                  : 2
+                    ? 6
+                    : dateRange === "90d"
+                      ? 3
+                      : 2
               }
             />
           </div>
@@ -1243,7 +1242,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
                     {totalFasts > 1
                       ? `${Math.round(
                           (DATE_RANGES.find((r) => r.id === dateRange)?.days ||
-                            30) / totalFasts
+                            30) / totalFasts,
                         )}d`
                       : "—"}
                   </div>
@@ -1264,8 +1263,8 @@ export default function Statistics({ fasts }: StatisticsProps) {
                     {
                       new Set(
                         filteredFasts.map((f) =>
-                          new Date(f.startTime).toDateString()
-                        )
+                          new Date(f.startTime).toDateString(),
+                        ),
                       ).size
                     }
                   </div>
@@ -1326,7 +1325,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
                           style={{
                             color:
                               weightChange < 0
-                                ? theme.colors.success
+                                ? theme.colors.accent
                                 : theme.colors.text,
                           }}
                         >
@@ -1532,10 +1531,10 @@ export default function Statistics({ fasts }: StatisticsProps) {
                       backgroundColor: theme.colors.bgCard,
                       border: `1px solid ${
                         insight.type === "positive"
-                          ? theme.colors.success + "50"
+                          ? theme.colors.accent + "50"
                           : insight.type === "suggestion"
-                          ? "#F59E0B50"
-                          : theme.colors.border
+                            ? "#F59E0B50"
+                            : theme.colors.border
                       }`,
                       padding: "20px",
                       display: "flex",
@@ -1550,10 +1549,10 @@ export default function Statistics({ fasts }: StatisticsProps) {
                         borderRadius: "50%",
                         backgroundColor:
                           insight.type === "positive"
-                            ? theme.colors.success + "20"
+                            ? theme.colors.accent + "20"
                             : insight.type === "suggestion"
-                            ? "#F59E0B20"
-                            : theme.colors.bg,
+                              ? "#F59E0B20"
+                              : theme.colors.bg,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -1566,7 +1565,7 @@ export default function Statistics({ fasts }: StatisticsProps) {
                           height="20"
                           viewBox="0 0 24 24"
                           fill="none"
-                          stroke={theme.colors.success}
+                          stroke={theme.colors.accent}
                           strokeWidth="2"
                         >
                           <polyline points="20 6 9 17 4 12" />

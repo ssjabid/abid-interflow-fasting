@@ -33,7 +33,7 @@ interface FastContextType {
     updates: { mood?: number; energyLevel?: number; notes?: string },
   ) => void;
   deleteFast: (fastId: string) => Promise<void>;
-  clearAllData: () => Promise<void>;
+  clearAllData: () => Promise<boolean>;
   loading: boolean;
 }
 
@@ -331,8 +331,8 @@ export function FastProvider({ children }: { children: ReactNode }) {
   };
 
   // Clear all user data from Firebase
-  const clearAllData = async () => {
-    if (!currentUser) return;
+  const clearAllData = async (): Promise<boolean> => {
+    if (!currentUser) return false;
 
     try {
       // Delete all fasts from Firebase
@@ -364,10 +364,10 @@ export function FastProvider({ children }: { children: ReactNode }) {
       setFasts([]);
       setActiveFast(null);
 
-      alert("All data cleared successfully! Please refresh the page.");
+      return true;
     } catch (error) {
       console.error("Error clearing data:", error);
-      alert("Failed to clear data. Please try again.");
+      return false;
     }
   };
 

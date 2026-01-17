@@ -31,8 +31,8 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
         ? "#FFFFFF"
         : "#FFFFFF"
       : theme.accent === "default"
-      ? "#0B0B0C"
-      : "#FFFFFF";
+        ? "#0B0B0C"
+        : "#FFFFFF";
   const [activeCategory, setActiveCategory] =
     useState<LeaderboardCategory>("totalHours");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -167,7 +167,7 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
 
   const formatValue = (
     entry: LeaderboardEntry,
-    category: LeaderboardCategory
+    category: LeaderboardCategory,
   ): string => {
     switch (category) {
       case "totalHours":
@@ -364,8 +364,6 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
           display: "flex",
           gap: "8px",
           marginBottom: "24px",
-          overflowX: "auto",
-          paddingBottom: "4px",
         }}
       >
         {CATEGORIES.map((cat) => (
@@ -373,7 +371,9 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
             key={cat.id}
             onClick={() => handleCategoryChange(cat.id)}
             style={{
-              padding: "10px 16px",
+              flex: 1,
+              padding: "12px 8px",
+              height: "44px",
               backgroundColor:
                 activeCategory === cat.id
                   ? theme.colors.accent + "20"
@@ -390,7 +390,6 @@ export default function Leaderboard({ userId, fasts }: LeaderboardProps) {
               fontSize: "13px",
               fontWeight: 500,
               cursor: "pointer",
-              whiteSpace: "nowrap",
               transition: "all 0.2s ease",
             }}
           >

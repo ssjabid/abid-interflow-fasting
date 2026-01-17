@@ -594,14 +594,13 @@ export default function FastLogger({
             </div>
 
             <div style={{ marginBottom: "32px" }}>
+              {/* First row: 5 protocol buttons */}
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "center",
                   gap: "8px",
-                  flexWrap: "wrap",
-                  maxWidth: "500px",
-                  margin: "0 auto",
+                  maxWidth: "560px",
+                  margin: "0 auto 8px",
                 }}
               >
                 {/* Built-in protocols */}
@@ -635,8 +634,9 @@ export default function FastLogger({
                         }
                       }}
                       style={{
-                        padding: "12px 20px",
-                        minWidth: "80px",
+                        flex: 1,
+                        padding: "12px 8px",
+                        height: "44px",
                         backgroundColor:
                           selectedProtocol === protocol.id
                             ? theme.colors.accent
@@ -651,7 +651,7 @@ export default function FastLogger({
                             ? accentTextColor
                             : theme.colors.textMuted,
                         fontSize: "14px",
-                        fontWeight: 600,
+                        fontWeight: 500,
                         cursor: "pointer",
                         transition: "all 0.2s ease",
                         opacity: isLocked ? 0.6 : 1,
@@ -698,10 +698,27 @@ export default function FastLogger({
                     </button>
                   );
                 })}
+              </div>
 
+              {/* Second row: Custom protocols + Add custom button */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "8px",
+                  maxWidth: "560px",
+                  margin: "0 auto",
+                }}
+              >
                 {/* Custom protocols */}
                 {customProtocols.map((protocol) => (
-                  <div key={protocol.id} style={{ position: "relative" }}>
+                  <div
+                    key={protocol.id}
+                    style={{
+                      position: "relative",
+                      flex: "0 0 calc((100% - 32px) / 5)",
+                    }}
+                  >
                     <button
                       onClick={() => setSelectedProtocol(protocol.id)}
                       onMouseEnter={(e) => {
@@ -719,8 +736,9 @@ export default function FastLogger({
                         }
                       }}
                       style={{
-                        padding: "12px 20px",
-                        minWidth: "80px",
+                        width: "100%",
+                        padding: "12px 8px",
+                        height: "44px",
                         backgroundColor:
                           selectedProtocol === protocol.id
                             ? theme.colors.accent
@@ -735,7 +753,7 @@ export default function FastLogger({
                             ? accentTextColor
                             : theme.colors.textMuted,
                         fontSize: "14px",
-                        fontWeight: 600,
+                        fontWeight: 500,
                         cursor: "pointer",
                         transition: "all 0.2s ease",
                       }}
@@ -772,7 +790,7 @@ export default function FastLogger({
                   </div>
                 ))}
 
-                {/* Add custom button */}
+                {/* Add custom button - same width as protocol buttons */}
                 <button
                   onClick={() => {
                     if (canAccessFeature("customFasts")) {
@@ -790,17 +808,19 @@ export default function FastLogger({
                     e.currentTarget.style.color = theme.colors.textMuted;
                   }}
                   style={{
-                    padding: "12px 20px",
-                    minWidth: "80px",
+                    flex: "0 0 calc((100% - 32px) / 5)",
+                    padding: "12px 8px",
+                    height: "44px",
                     backgroundColor: "transparent",
                     border: `1px dashed ${theme.colors.border}`,
                     color: theme.colors.textMuted,
                     fontSize: "14px",
-                    fontWeight: 600,
+                    fontWeight: 500,
                     cursor: "pointer",
                     transition: "all 0.2s ease",
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "center",
                     gap: "6px",
                     opacity: canAccessFeature("customFasts") ? 1 : 0.6,
                     position: "relative",
@@ -857,6 +877,7 @@ export default function FastLogger({
                   )}
                 </button>
               </div>
+
               <div
                 style={{
                   fontSize: "13px",
@@ -1023,38 +1044,30 @@ export default function FastLogger({
               >
                 How do you feel?
               </label>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, 1fr)",
+                  gap: "8px",
+                }}
+              >
                 {[
                   {
                     value: 1,
                     label: "Struggling",
                     icon: (color: string) => (
                       <svg
-                        width="24"
-                        height="24"
+                        width="28"
+                        height="28"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke={color}
                         strokeWidth="1.5"
                       >
                         <circle cx="12" cy="12" r="10" />
-                        <path d="M8 15s1.5-2 4-2 4 2 4 2" />
-                        <line
-                          x1="9"
-                          y1="9"
-                          x2="9.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <line
-                          x1="15"
-                          y1="9"
-                          x2="15.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
+                        <path d="M8 16 Q12 12 16 16" strokeLinecap="round" />
+                        <circle cx="8" cy="9" r="1" fill={color} />
+                        <circle cx="16" cy="9" r="1" fill={color} />
                       </svg>
                     ),
                   },
@@ -1063,31 +1076,17 @@ export default function FastLogger({
                     label: "Difficult",
                     icon: (color: string) => (
                       <svg
-                        width="24"
-                        height="24"
+                        width="28"
+                        height="28"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke={color}
                         strokeWidth="1.5"
                       >
                         <circle cx="12" cy="12" r="10" />
-                        <path d="M9 15s0.5-1 3-1 3 1 3 1" />
-                        <line
-                          x1="9"
-                          y1="9"
-                          x2="9.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <line
-                          x1="15"
-                          y1="9"
-                          x2="15.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
+                        <path d="M8 15 Q12 13 16 15" strokeLinecap="round" />
+                        <circle cx="8" cy="9" r="1" fill={color} />
+                        <circle cx="16" cy="9" r="1" fill={color} />
                       </svg>
                     ),
                   },
@@ -1096,31 +1095,17 @@ export default function FastLogger({
                     label: "Neutral",
                     icon: (color: string) => (
                       <svg
-                        width="24"
-                        height="24"
+                        width="28"
+                        height="28"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke={color}
                         strokeWidth="1.5"
                       >
                         <circle cx="12" cy="12" r="10" />
-                        <line x1="8" y1="15" x2="16" y2="15" />
-                        <line
-                          x1="9"
-                          y1="9"
-                          x2="9.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <line
-                          x1="15"
-                          y1="9"
-                          x2="15.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
+                        <path d="M8 14 L16 14" strokeLinecap="round" />
+                        <circle cx="8" cy="9" r="1" fill={color} />
+                        <circle cx="16" cy="9" r="1" fill={color} />
                       </svg>
                     ),
                   },
@@ -1129,31 +1114,17 @@ export default function FastLogger({
                     label: "Good",
                     icon: (color: string) => (
                       <svg
-                        width="24"
-                        height="24"
+                        width="28"
+                        height="28"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke={color}
                         strokeWidth="1.5"
                       >
                         <circle cx="12" cy="12" r="10" />
-                        <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                        <line
-                          x1="9"
-                          y1="9"
-                          x2="9.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <line
-                          x1="15"
-                          y1="9"
-                          x2="15.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
+                        <path d="M8 13 Q12 16 16 13" strokeLinecap="round" />
+                        <circle cx="8" cy="9" r="1" fill={color} />
+                        <circle cx="16" cy="9" r="1" fill={color} />
                       </svg>
                     ),
                   },
@@ -1162,31 +1133,17 @@ export default function FastLogger({
                     label: "Great",
                     icon: (color: string) => (
                       <svg
-                        width="24"
-                        height="24"
+                        width="28"
+                        height="28"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke={color}
                         strokeWidth="1.5"
                       >
                         <circle cx="12" cy="12" r="10" />
-                        <path d="M8 13s1.5 3 4 3 4-3 4-3" />
-                        <line
-                          x1="9"
-                          y1="9"
-                          x2="9.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <line
-                          x1="15"
-                          y1="9"
-                          x2="15.01"
-                          y2="9"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
+                        <path d="M8 12 Q12 17 16 12" strokeLinecap="round" />
+                        <circle cx="8" cy="9" r="1" fill={color} />
+                        <circle cx="16" cy="9" r="1" fill={color} />
                       </svg>
                     ),
                   },
@@ -1195,35 +1152,47 @@ export default function FastLogger({
                     key={item.value}
                     onClick={() => setEndMood(item.value)}
                     style={{
-                      flex: 1,
-                      padding: "12px 8px",
+                      height: "90px",
+                      padding: "8px 2px",
                       backgroundColor:
                         endMood === item.value
-                          ? theme.colors.accent
+                          ? theme.colors.text
                           : theme.colors.bgCard,
                       border: `1px solid ${
                         endMood === item.value
-                          ? theme.colors.accent
+                          ? theme.colors.text
                           : theme.colors.border
                       }`,
                       color:
                         endMood === item.value
-                          ? accentTextColor
-                          : theme.colors.textMuted,
+                          ? theme.colors.bg
+                          : theme.colors.text,
                       cursor: "pointer",
                       transition: "all 0.2s ease",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
+                      justifyContent: "center",
                       gap: "6px",
+                      overflow: "hidden",
                     }}
                   >
                     {item.icon(
                       endMood === item.value
-                        ? accentTextColor
-                        : theme.colors.textMuted,
+                        ? theme.colors.bg
+                        : theme.colors.text,
                     )}
-                    <span style={{ fontSize: "9px", fontWeight: 500 }}>
+                    <span
+                      style={{
+                        fontSize: "9px",
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "100%",
+                        textAlign: "center",
+                      }}
+                    >
                       {item.label}
                     </span>
                   </button>
@@ -1245,7 +1214,13 @@ export default function FastLogger({
               >
                 Energy level?
               </label>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, 1fr)",
+                  gap: "8px",
+                }}
+              >
                 {[
                   { value: 1, label: "Very Low" },
                   { value: 2, label: "Low" },
@@ -1257,40 +1232,56 @@ export default function FastLogger({
                     key={item.value}
                     onClick={() => setEndEnergy(item.value)}
                     style={{
-                      flex: 1,
-                      padding: "12px 8px",
+                      height: "90px",
+                      padding: "8px 2px",
                       backgroundColor:
                         endEnergy === item.value
-                          ? theme.colors.accent
+                          ? theme.colors.text
                           : theme.colors.bgCard,
                       border: `1px solid ${
                         endEnergy === item.value
-                          ? theme.colors.accent
+                          ? theme.colors.text
                           : theme.colors.border
                       }`,
                       color:
                         endEnergy === item.value
-                          ? accentTextColor
-                          : theme.colors.textMuted,
+                          ? theme.colors.bg
+                          : theme.colors.text,
                       cursor: "pointer",
                       transition: "all 0.2s ease",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      gap: "4px",
+                      justifyContent: "center",
+                      gap: "6px",
+                      overflow: "hidden",
                     }}
                   >
                     <svg
-                      width="18"
-                      height="18"
+                      width="28"
+                      height="28"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="2"
+                      strokeWidth="1.5"
                     >
-                      <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
+                      <polygon
+                        points="13,2 3,14 12,14 11,22 21,10 12,10 13,2"
+                        fill={item.value >= 3 ? "currentColor" : "none"}
+                        fillOpacity={0.2 + item.value * 0.16}
+                      />
                     </svg>
-                    <span style={{ fontSize: "9px", fontWeight: 500 }}>
+                    <span
+                      style={{
+                        fontSize: "9px",
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "100%",
+                        textAlign: "center",
+                      }}
+                    >
                       {item.label}
                     </span>
                   </button>

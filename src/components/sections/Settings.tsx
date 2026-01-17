@@ -3,6 +3,7 @@ import { useTheme, THEME_ACCENTS } from "../../context/ThemeContext";
 import { useFasts } from "../../context/FastContext";
 import { useSubscription } from "../../context/SubscriptionContext";
 import { useAuth } from "../../context/AuthContext";
+import { useAlert } from "../../context/AlertContext";
 import type { ThemeMode, ThemeAccent } from "../../context/ThemeContext";
 import type { FastingSchedule } from "../../types";
 import { PROTOCOLS } from "../../types";
@@ -27,6 +28,7 @@ export default function Settings({
   const { clearAllData, fasts } = useFasts();
   const { canAccessFeature, promptUpgrade } = useSubscription();
   const { currentUser, updateUserEmail, updateUserPassword } = useAuth();
+  const { showSuccess, showError } = useAlert();
   const [showShareModal, setShowShareModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
@@ -75,7 +77,7 @@ export default function Settings({
       // Load notification preferences
       if (profile.notifications !== undefined) {
         setEatingWindowReminders(
-          profile.notifications.eatingWindowReminders ?? true
+          profile.notifications.eatingWindowReminders ?? true,
         );
         setDailyTips(profile.notifications.dailyTips ?? true);
       }
@@ -93,11 +95,11 @@ export default function Settings({
     localStorage.setItem(`profile_${userId}`, JSON.stringify(profile));
   };
 
-  const saveSchedule = (
+  const saveSchedule = async (
     enabled: boolean,
     start: string,
     end: string,
-    isNewSchedule: boolean = false
+    isNewSchedule: boolean = false,
   ) => {
     const stored = localStorage.getItem(`profile_${userId}`);
     if (stored) {
@@ -121,7 +123,22 @@ export default function Settings({
         lastAutoStartDate: profile.schedule?.lastAutoStartDate,
       };
       profile.schedule = schedule;
+
+      // Save to localStorage
       localStorage.setItem(`profile_${userId}`, JSON.stringify(profile));
+
+      // Also sync to Firebase for persistence across sessions
+      try {
+        const { doc, setDoc } = await import("firebase/firestore");
+        const { db } = await import("../../config/firebase");
+        const profileRef = doc(db, "profiles", userId);
+        await setDoc(profileRef, {
+          ...profile,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error("Error syncing schedule to Firebase:", error);
+      }
     }
   };
 
@@ -148,8 +165,8 @@ export default function Settings({
         ? "#FFFFFF"
         : "#FFFFFF"
       : previewAccent === "default"
-      ? "#0B0B0C"
-      : "#FFFFFF";
+        ? "#0B0B0C"
+        : "#FFFFFF";
 
   const handleApplyAccent = () => {
     if (pendingAccent) {
@@ -169,7 +186,7 @@ export default function Settings({
       const completedFasts = fasts.filter((f) => f.status === "completed");
 
       if (completedFasts.length === 0) {
-        alert("No completed fasts to export.");
+        showError("No Data", "No completed fasts to export.");
         setExportLoading(false);
         return;
       }
@@ -190,7 +207,7 @@ export default function Settings({
       const rows = completedFasts
         .sort(
           (a, b) =>
-            new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+            new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
         )
         .map((fast) => {
           const startDate = new Date(fast.startTime);
@@ -233,7 +250,7 @@ export default function Settings({
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `interflow-fasts-${new Date().toISOString().split("T")[0]}.csv`
+        `interflow-fasts-${new Date().toISOString().split("T")[0]}.csv`,
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
@@ -243,7 +260,7 @@ export default function Settings({
       setExportLoading(false);
     } catch (error) {
       console.error("Error exporting CSV:", error);
-      alert("Failed to export data. Please try again.");
+      showError("Export Failed", "Failed to export data. Please try again.");
       setExportLoading(false);
     }
   };
@@ -283,7 +300,7 @@ export default function Settings({
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `interflow-backup-${new Date().toISOString().split("T")[0]}.json`
+        `interflow-backup-${new Date().toISOString().split("T")[0]}.json`,
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
@@ -293,7 +310,7 @@ export default function Settings({
       setExportLoading(false);
     } catch (error) {
       console.error("Error exporting JSON:", error);
-      alert("Failed to export data. Please try again.");
+      showError("Export Failed", "Failed to export data. Please try again.");
       setExportLoading(false);
     }
   };
@@ -305,14 +322,14 @@ export default function Settings({
       const completedFasts = fasts.filter((f) => f.status === "completed");
 
       if (completedFasts.length === 0) {
-        alert("No completed fasts to export.");
+        showError("No Data", "No completed fasts to export.");
         setExportLoading(false);
         return;
       }
 
       const sortedFasts = completedFasts.sort(
         (a, b) =>
-          new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+          new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
       );
 
       const moodLabels = [
@@ -388,7 +405,7 @@ export default function Settings({
               ${sortedFasts
                 .map((fast) => {
                   const protocol = PROTOCOLS.find(
-                    (p) => p.id === fast.protocol
+                    (p) => p.id === fast.protocol,
                   );
                   return `
                   <tr>
@@ -396,9 +413,7 @@ export default function Settings({
                     <td>${(fast.duration / 60).toFixed(1)}h</td>
                     <td>${protocol?.name || fast.protocol || "-"}</td>
                     <td>${fast.mood ? moodLabels[fast.mood] : "-"}</td>
-                    <td>${
-                      fast.energyLevel ? energyLabels[fast.energyLevel] : "-"
-                    }</td>
+                    <td>${fast.energyLevel ? energyLabels[fast.energyLevel] : "-"}</td>
                     <td class="notes">${fast.notes || "-"}</td>
                   </tr>
                 `;
@@ -423,7 +438,7 @@ export default function Settings({
       setExportLoading(false);
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      alert("Failed to export PDF. Please try again.");
+      showError("Export Failed", "Failed to export PDF. Please try again.");
       setExportLoading(false);
     }
   };
@@ -454,11 +469,19 @@ export default function Settings({
 
   const handleClearAllData = async () => {
     try {
-      await clearAllData();
-      window.location.reload();
+      const success = await clearAllData();
+      if (success) {
+        showSuccess(
+          "Data Cleared",
+          "All your data has been cleared successfully. The page will now refresh.",
+        );
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        showError("Error", "Failed to clear data. Please try again.");
+      }
     } catch (error) {
       console.error("Error clearing data:", error);
-      alert("Failed to clear data. Please try again.");
+      showError("Error", "Failed to clear data. Please try again.");
     }
   };
 
@@ -1020,7 +1043,7 @@ export default function Settings({
                 } else {
                   // Can't programmatically disable, show message
                   alert(
-                    "To disable notifications, please update your browser settings for this site."
+                    "To disable notifications, please update your browser settings for this site.",
                   );
                 }
               }

@@ -215,13 +215,21 @@ function App() {
     if (newUnlocks.length > 0) {
       // Save new achievements to profile
       const updated = [...(profile.achievements || []), ...newUnlocks];
+      const updatedProfile = {
+        ...profile,
+        achievements: updated,
+      };
+
+      // Save to localStorage
       localStorage.setItem(
         `profile_${currentUser.uid}`,
-        JSON.stringify({
-          ...profile,
-          achievements: updated,
-        })
+        JSON.stringify(updatedProfile),
       );
+
+      // Also sync to Firebase for persistence
+      import("./services/profile").then(({ saveProfile }) => {
+        saveProfile(currentUser.uid, updatedProfile);
+      });
     }
   }, [fasts, currentUser, checkForNewAchievements]);
 
@@ -239,7 +247,7 @@ function App() {
   const completedFasts = fasts.filter((f) => f.status === "completed");
   const totalHours = completedFasts.reduce(
     (acc, f) => acc + f.duration / 60,
-    0
+    0,
   );
 
   // Update body background on theme change
@@ -254,7 +262,7 @@ function App() {
   const calculateStreak = () => {
     if (completedFasts.length === 0) return 0;
     const sortedFasts = [...completedFasts].sort(
-      (a, b) => new Date(b.endTime!).getTime() - new Date(a.endTime!).getTime()
+      (a, b) => new Date(b.endTime!).getTime() - new Date(a.endTime!).getTime(),
     );
     let streak = 0;
     let currentDate = new Date();
@@ -264,7 +272,7 @@ function App() {
       const fastDate = new Date(fast.endTime!);
       fastDate.setHours(0, 0, 0, 0);
       const diffDays = Math.floor(
-        (currentDate.getTime() - fastDate.getTime()) / (1000 * 60 * 60 * 24)
+        (currentDate.getTime() - fastDate.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (diffDays <= 1) {

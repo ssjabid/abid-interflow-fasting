@@ -40,8 +40,8 @@ const MoodIcon = ({ value, color }: { value: number; color: string }) => {
 
   return (
     <svg
-      width="24"
-      height="24"
+      width="28"
+      height="28"
       viewBox="0 0 24 24"
       fill="none"
       stroke={color}
@@ -55,39 +55,26 @@ const MoodIcon = ({ value, color }: { value: number; color: string }) => {
   );
 };
 
-// Energy icon component - battery/lightning styles
+// Energy icon component - lightning bolt style matching mood icon
 const EnergyIcon = ({ value, color }: { value: number; color: string }) => {
-  // Different fill levels for battery
-  const fillHeight = value * 3;
-  const fillY = 17 - fillHeight;
+  // Opacity increases with energy level
+  const fillOpacity = 0.2 + value * 0.16;
 
   return (
     <svg
-      width="24"
-      height="24"
+      width="28"
+      height="28"
       viewBox="0 0 24 24"
       fill="none"
       stroke={color}
       strokeWidth="1.5"
     >
-      <rect x="6" y="4" width="12" height="16" rx="2" />
-      <rect x="9" y="1" width="6" height="3" rx="1" />
-      <rect
-        x="8"
-        y={fillY}
-        width="8"
-        height={fillHeight}
-        fill={color}
-        opacity="0.6"
+      {/* Lightning bolt - scaled to match face icon visually */}
+      <polygon
+        points="13,2 3,14 12,14 11,22 21,10 12,10 13,2"
+        fill={value >= 3 ? color : "none"}
+        fillOpacity={fillOpacity}
       />
-      {value >= 4 && (
-        <path
-          d="M12 8 L10 12 L14 12 L12 16"
-          stroke={color}
-          strokeWidth="1.5"
-          fill="none"
-        />
-      )}
     </svg>
   );
 };
@@ -258,7 +245,13 @@ export default function EditFastModal({
           >
             How did you feel?
           </label>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: "8px",
+            }}
+          >
             {MOOD_LEVELS.map((level) => (
               <button
                 key={level.value}
@@ -266,22 +259,22 @@ export default function EditFastModal({
                   setMood(mood === level.value ? undefined : level.value)
                 }
                 style={{
-                  flex: "1 1 auto",
-                  minWidth: "70px",
-                  padding: "12px 8px",
+                  height: "88px",
+                  padding: "12px 4px",
                   backgroundColor:
                     mood === level.value ? theme.colors.text : theme.colors.bg,
                   border: `1px solid ${mood === level.value ? theme.colors.text : theme.colors.border}`,
                   color:
                     mood === level.value ? theme.colors.bg : theme.colors.text,
-                  fontSize: "11px",
+                  fontSize: "10px",
                   fontWeight: 500,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: "6px",
+                  justifyContent: "center",
+                  gap: "8px",
                 }}
               >
                 <MoodIcon
@@ -311,7 +304,13 @@ export default function EditFastModal({
           >
             Energy Level
           </label>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: "8px",
+            }}
+          >
             {ENERGY_LEVELS.map((level) => (
               <button
                 key={level.value}
@@ -321,9 +320,8 @@ export default function EditFastModal({
                   )
                 }
                 style={{
-                  flex: "1 1 auto",
-                  minWidth: "70px",
-                  padding: "12px 8px",
+                  height: "88px",
+                  padding: "12px 4px",
                   backgroundColor:
                     energyLevel === level.value
                       ? theme.colors.text
@@ -333,14 +331,15 @@ export default function EditFastModal({
                     energyLevel === level.value
                       ? theme.colors.bg
                       : theme.colors.text,
-                  fontSize: "11px",
+                  fontSize: "10px",
                   fontWeight: 500,
                   cursor: "pointer",
                   transition: "all 0.2s ease",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: "6px",
+                  justifyContent: "center",
+                  gap: "8px",
                 }}
               >
                 <EnergyIcon
